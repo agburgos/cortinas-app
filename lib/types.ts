@@ -9,12 +9,22 @@ export interface Cliente {
   created_at: string;
 }
 
+export interface Instalador {
+  id: string;
+  nombre: string;
+  telefono: string | null;
+  costo_default: number;
+  created_at: string;
+}
+
 export interface Producto {
   id: string;
   nombre: string;
   tipo: TipoProducto;
+  marca: string | null;
   precio_m2: number;
   precio_unidad: number;
+  costo_base: number;
   descripcion: string | null;
   created_at: string;
 }
@@ -28,13 +38,16 @@ export interface CotizacionItem {
   metros?: number;
   cantidad: number;
   precioUnitario: number;
+  costoUnitario: number;
   subtotal: number;
+  costoSubtotal: number;
   nota: string;
   detalle: string;
 }
 
 export interface Cotizacion {
   id: string;
+  numero: number;
   cliente_id: string | null;
   items: CotizacionItem[];
   total: number;
@@ -55,7 +68,8 @@ export interface Venta {
   monto_pagado: number;
   instalado: boolean;
   fecha_instalacion: string | null;
-  instalador: string | null;
+  instalador_id: string | null;
+  costo_instalacion: number;
   notas: string | null;
   fecha: string;
 }
@@ -67,3 +81,5 @@ export const TIPO_LABEL: Record<TipoProducto, string> = {
   instalacion: 'Instalación',
   accesorio: 'Accesorio',
 };
+
+export const EMPRESA_NOMBRE = 'Cortinajes Claudia Burgos';

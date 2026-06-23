@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Cliente, CotizacionItem, Producto, TIPO_LABEL } from "@/lib/types";
 import { fmt } from "@/lib/format";
+import { generarCotizacionPDF } from "@/lib/pdf";
 import { Card, Btn } from "@/components/ui";
 
 export default function CotizarPage() {
@@ -27,6 +28,7 @@ export default function CotizarPage() {
 
   const [items, setItems] = useState<CotizacionItem[]>([]);
   const [notas, setNotas] = useState("");
+  const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -95,6 +97,7 @@ export default function CotizarPage() {
       if (!a || !h) return alert("Ingresa ancho y alto");
       const m2 = a * h;
       const subtotal = m2 * producto.precio_m2 * cant;
+      const costoSubtotal = m2 * producto.costo_base * cant;
       item = {
         productoId: producto.id,
         nombre: producto.nombre,
@@ -104,20 +107,25 @@ export default function CotizarPage() {
         metros: m2,
         cantidad: cant,
         precioUnitario: producto.precio_m2,
+        costoUnitario: producto.costo_base,
         subtotal,
+        costoSubtotal,
         nota,
         detalle: `${a}m × ${h}m × ${cant}u`,
       };
     } else {
       const cant = parseInt(cantidadFixed) || 1;
       const subtotal = cant * producto.precio_unidad;
+      const costoSubtotal = cant * producto.costo_base;
       item = {
         productoId: producto.id,
         nombre: producto.nombre,
         tipo: producto.tipo,
         cantidad: cant,
         precioUnitario: producto.precio_unidad,
+        costoUnitario: producto.costo_base,
         subtotal,
+        costoSubtotal,
         nota,
         detalle: `${cant} unidad(es)`,
       };
@@ -136,6 +144,8 @@ export default function CotizarPage() {
   }
 
   const total = items.reduce((a, it) => a + it.subtotal, 0);
+  const costoTotal = items.reduce((a, it) => a + it.costoSubtotal, 0);
+  const ganancia = total - costoTotal;
 
   function textoResumen(): string {
     const itemsTexto = items
@@ -163,6 +173,7 @@ export default function CotizarPage() {
 
   async function saveCotizacion() {
     if (!items.length) return alert("Agrega al menos un producto");
+    setGuardando(true);
     const { data: cotiz } = await supabase
       .from("cotizaciones")
       .insert({ cliente_id: clienteId, items, total, notas, texto_ia: "", estado: "Enviada" })
@@ -175,9 +186,21 @@ export default function CotizarPage() {
       estado_pago: "pendiente",
       monto_pagado: 0,
       instalado: false,
+      costo_instalacion: 0,
       notas,
     });
-    alert("✓ Cotización guardada y venta creada");
+    if (cotiz) {
+      generarCotizacionPDF({
+        numero: cotiz.numero,
+        fecha: cotiz.fecha,
+        cliente: clienteSeleccionado,
+        items,
+        total,
+        notas,
+      });
+    }
+    alert("✓ Cotización guardada, venta creada y PDF descargado");
+    setGuardando(false);
     resetCotizador();
     router.push("/");
   }
@@ -287,9 +310,13 @@ export default function CotizarPage() {
                 </div>
               ))}
             </div>
-            <div className="bg-[var(--charcoal)] text-white rounded-lg px-4 py-3.5 flex justify-between items-center">
-              <div className="text-[13px] font-medium opacity-80">Total cotización</div>
-              <div className="text-2xl font-extrabold tracking-tight">{fmt(total)}</div>
+            <div className="rounded-lg px-4 py-3.5 flex justify-between items-center" style={{ background: "var(--gradient)" }}>
+              <div className="text-[13px] font-medium text-white/85">Total cotización</div>
+              <div className="text-2xl font-extrabold tracking-tight text-white">{fmt(total)}</div>
+            </div>
+            <div className="flex justify-between text-[11px] text-[var(--mid)] mt-2 px-1">
+              <span>Costo estimado: <strong className="text-[var(--charcoal)]">{fmt(costoTotal)}</strong></span>
+              <span>Ganancia: <strong className="text-[var(--teal)]">{fmt(ganancia)}</strong></span>
             </div>
           </Card>
 
@@ -302,7 +329,9 @@ export default function CotizarPage() {
             <Btn variant="sm-green" onClick={shareWhatsApp}>WhatsApp</Btn>
           </div>
 
-          <Btn variant="primary" onClick={saveCotizacion}>Guardar cotización</Btn>
+          <Btn variant="primary" onClick={saveCotizacion} disabled={guardando}>
+            {guardando ? "Guardando..." : "Guardar y generar PDF"}
+          </Btn>
         </>
       )}
 

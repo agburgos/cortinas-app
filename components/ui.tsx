@@ -1,8 +1,12 @@
-export function Card({ title, children }: { title?: string; children: React.ReactNode }) {
+export function Card({ title, children, accent = false }: { title?: string; children: React.ReactNode; accent?: boolean }) {
   return (
-    <div className="bg-[var(--warm-white)] rounded-2xl p-4 mb-3 border border-[var(--border)] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.04)]">
+    <div
+      className={`bg-[var(--warm-white)] rounded-2xl p-4 mb-3 border shadow-[0_1px_3px_rgba(0,0,0,0.06),0_8px_24px_rgba(193,69,42,0.06)] ${
+        accent ? "border-[var(--accent-light)] border-l-[4px]" : "border-[var(--border)]"
+      }`}
+    >
       {title && (
-        <div className="text-[13px] font-semibold text-[var(--mid)] uppercase tracking-wide mb-3">
+        <div className="text-[12px] font-bold text-[var(--accent)] uppercase tracking-wider mb-3">
           {title}
         </div>
       )}
@@ -26,16 +30,18 @@ export function Badge({
   color = "gray",
 }: {
   children: React.ReactNode;
-  color?: "green" | "yellow" | "red" | "gray";
+  color?: "green" | "yellow" | "red" | "gray" | "teal" | "gold";
 }) {
   const colors: Record<string, string> = {
     green: "bg-[var(--green-bg)] text-[var(--green)]",
     yellow: "bg-[var(--yellow-bg)] text-[var(--yellow)]",
     red: "bg-[var(--red-bg)] text-[var(--red)]",
     gray: "bg-[var(--accent-bg)] text-[var(--accent)]",
+    teal: "bg-[var(--teal-bg)] text-[var(--teal)]",
+    gold: "bg-[var(--gold-bg)] text-[var(--gold)]",
   };
   return (
-    <span className={`inline-block text-[11px] font-bold px-2 py-1 rounded-full tracking-wide ${colors[color]}`}>
+    <span className={`inline-block text-[11px] font-bold px-2.5 py-1 rounded-full tracking-wide ${colors[color]}`}>
       {children}
     </span>
   );
@@ -51,26 +57,31 @@ export function Btn({
 }: {
   children: React.ReactNode;
   onClick?: () => void;
-  variant?: "primary" | "secondary" | "ghost" | "danger" | "green" | "sm-secondary" | "sm-green" | "sm-primary";
+  variant?: "primary" | "secondary" | "ghost" | "danger" | "green" | "teal" | "sm-secondary" | "sm-green" | "sm-primary" | "sm-teal" | "sm-ghost";
   type?: "button" | "submit";
   className?: string;
   disabled?: boolean;
 }) {
   const variants: Record<string, string> = {
-    primary: "bg-[var(--accent)] text-white py-3.5 text-base font-bold rounded-lg w-full",
-    secondary: "bg-[var(--accent-bg)] text-[var(--accent)] py-3.5 text-base font-bold rounded-lg w-full",
-    ghost: "bg-transparent border-[1.5px] border-[var(--border)] text-[var(--charcoal)] py-2.5 text-sm font-bold rounded-lg w-full",
-    danger: "bg-[var(--red-bg)] text-[var(--red)] py-2.5 text-sm font-bold rounded-lg w-full",
-    green: "bg-[var(--green-bg)] text-[var(--green)] py-3.5 text-base font-bold rounded-lg w-full",
+    primary: "text-white py-3.5 text-base font-bold rounded-xl w-full shadow-md shadow-[rgba(193,69,42,0.25)]",
+    secondary: "bg-[var(--accent-bg)] text-[var(--accent)] py-3.5 text-base font-bold rounded-xl w-full",
+    ghost: "bg-transparent border-[1.5px] border-[var(--border)] text-[var(--charcoal)] py-2.5 text-sm font-bold rounded-xl w-full",
+    danger: "bg-[var(--red-bg)] text-[var(--red)] py-2.5 text-sm font-bold rounded-xl w-full",
+    green: "bg-[var(--green-bg)] text-[var(--green)] py-3.5 text-base font-bold rounded-xl w-full",
+    teal: "bg-[var(--teal-bg)] text-[var(--teal)] py-3.5 text-base font-bold rounded-xl w-full",
     "sm-secondary": "bg-[var(--accent-bg)] text-[var(--accent)] py-2 px-3.5 text-[13px] font-bold rounded-lg",
     "sm-green": "bg-[var(--green-bg)] text-[var(--green)] py-2 px-3.5 text-[13px] font-bold rounded-lg",
-    "sm-primary": "bg-[var(--accent)] text-white py-2 px-3.5 text-[13px] font-bold rounded-lg",
+    "sm-primary": "text-white py-2 px-3.5 text-[13px] font-bold rounded-lg",
+    "sm-teal": "bg-[var(--teal-bg)] text-[var(--teal)] py-2 px-3.5 text-[13px] font-bold rounded-lg",
+    "sm-ghost": "bg-transparent border-[1.5px] border-[var(--border)] text-[var(--charcoal)] py-2 px-3.5 text-[13px] font-bold rounded-lg",
   };
+  const gradientStyle = variant === "primary" || variant === "sm-primary" ? { background: "var(--gradient)" } : undefined;
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
+      style={gradientStyle}
       className={`active:opacity-80 transition-opacity disabled:opacity-50 ${variants[variant]} ${className}`}
     >
       {children}

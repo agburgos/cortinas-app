@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { Cliente, EstadoPago, Venta } from "@/lib/types";
+import { Cliente, EstadoPago, Instalador, Venta } from "@/lib/types";
 import { fmt, fmtDate } from "@/lib/format";
 import { Btn } from "@/components/ui";
 
@@ -12,23 +12,30 @@ export default function VentaDetailPage() {
   const params = useParams<{ id: string }>();
   const [venta, setVenta] = useState<Venta | null>(null);
   const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [instaladores, setInstaladores] = useState<Instalador[]>([]);
   const [loading, setLoading] = useState(true);
   const [fechaInst, setFechaInst] = useState("");
-  const [instalador, setInstalador] = useState("");
+  const [instaladorId, setInstaladorId] = useState("");
+  const [costoInstalacion, setCostoInstalacion] = useState(0);
   const [montoPagado, setMontoPagado] = useState(0);
   const [estadoPago, setEstadoPago] = useState<EstadoPago>("pendiente");
   const [instalado, setInstalado] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const { data: v } = await supabase.from("ventas").select("*").eq("id", params.id).single();
+      const [{ data: v }, { data: insts }] = await Promise.all([
+        supabase.from("ventas").select("*").eq("id", params.id).single(),
+        supabase.from("instaladores").select("*").order("nombre", { ascending: true }),
+      ]);
+      setInstaladores(insts ?? []);
       if (!v) {
         setLoading(false);
         return;
       }
       setVenta(v);
       setFechaInst(v.fecha_instalacion || "");
-      setInstalador(v.instalador || "");
+      setInstaladorId(v.instalador_id || "");
+      setCostoInstalacion(v.costo_instalacion || 0);
       setMontoPagado(v.monto_pagado || 0);
       setEstadoPago(v.estado_pago);
       setInstalado(v.instalado);
@@ -44,13 +51,21 @@ export default function VentaDetailPage() {
   if (!venta) return <p className="text-[var(--mid)] text-sm">Venta no encontrada</p>;
 
   const restante = (venta.total || 0) - (venta.monto_pagado || 0);
+  const instaladorActual = instaladores.find((i) => i.id === venta.instalador_id);
+
+  function onInstaladorChange(id: string) {
+    setInstaladorId(id);
+    const inst = instaladores.find((i) => i.id === id);
+    if (inst) setCostoInstalacion(inst.costo_default);
+  }
 
   async function updateVenta() {
     await supabase
       .from("ventas")
       .update({
         fecha_instalacion: fechaInst || null,
-        instalador,
+        instalador_id: instaladorId || null,
+        costo_instalacion: costoInstalacion,
         monto_pagado: montoPagado,
         estado_pago: estadoPago,
         instalado,
@@ -74,9 +89,10 @@ export default function VentaDetailPage() {
         <Row k="Total" v={fmt(venta.total)} />
         <Row k="Cobrado" v={fmt(venta.monto_pagado || 0)} color="var(--green)" />
         <Row k="Por cobrar" v={fmt(restante)} color="var(--red)" />
-        <Row k="Estado pago" v={venta.estado_pago} last={!venta.fecha_instalacion && !venta.instalador} />
+        <Row k="Estado pago" v={venta.estado_pago} last={!venta.fecha_instalacion && !instaladorActual} />
         {venta.fecha_instalacion && <Row k="Fecha inst." v={fmtDate(venta.fecha_instalacion)} />}
-        {venta.instalador && <Row k="Instalador" v={venta.instalador} last />}
+        {instaladorActual && <Row k="Instalador" v={instaladorActual.nombre} />}
+        {venta.costo_instalacion > 0 && <Row k="Costo instalación" v={fmt(venta.costo_instalacion)} color="var(--accent)" last />}
       </div>
 
       <div className="grid gap-3">
@@ -86,7 +102,22 @@ export default function VentaDetailPage() {
         </div>
         <div>
           <label>Instalador</label>
-          <input value={instalador} onChange={(e) => setInstalador(e.target.value)} placeholder="Nombre del instalador" />
+          <select value={instaladorId} onChange={(e) => onInstaladorChange(e.target.value)}>
+            <option value="">Sin asignar</option>
+            {instaladores.map((i) => (
+              <option key={i.id} value={i.id}>
+                {i.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label>Costo de instalación ($)</label>
+          <input
+            type="number"
+            value={costoInstalacion}
+            onChange={(e) => setCostoInstalacion(parseFloat(e.target.value) || 0)}
+          />
         </div>
         <div>
           <label>Monto cobrado</label>

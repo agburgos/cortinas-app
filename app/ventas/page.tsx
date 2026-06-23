@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { Cliente, Venta } from "@/lib/types";
+import { Cliente, Instalador, Venta } from "@/lib/types";
 import { fmt, fmtDate } from "@/lib/format";
 import { Empty, Badge } from "@/components/ui";
 
@@ -12,17 +12,20 @@ type Filtro = "todas" | "pendiente" | "instalacion" | "pagado";
 export default function VentasPage() {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [instaladores, setInstaladores] = useState<Instalador[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<Filtro>("todas");
 
   useEffect(() => {
     (async () => {
-      const [v, c] = await Promise.all([
+      const [v, c, i] = await Promise.all([
         supabase.from("ventas").select("*").order("fecha", { ascending: false }),
         supabase.from("clientes").select("*"),
+        supabase.from("instaladores").select("*"),
       ]);
       setVentas(v.data ?? []);
       setClientes(c.data ?? []);
+      setInstaladores(i.data ?? []);
       setLoading(false);
     })();
   }, []);
@@ -83,7 +86,10 @@ export default function VentasPage() {
               {v.fecha_instalacion && (
                 <div className="text-xs text-[var(--mid)] mt-2 pt-2 border-t border-[var(--border)]">
                   📅 Instalación: {fmtDate(v.fecha_instalacion)}
-                  {v.instalador ? ` · ${v.instalador}` : ""}
+                  {(() => {
+                    const inst = instaladores.find((i) => i.id === v.instalador_id);
+                    return inst ? ` · ${inst.nombre}` : "";
+                  })()}
                 </div>
               )}
             </Link>

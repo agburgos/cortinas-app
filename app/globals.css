@@ -1,21 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --linen: #F5F0E8;
-  --warm-white: #FDFAF5;
-  --charcoal: #1C1C1E;
-  --mid: #6B6B6B;
-  --light: #B0A99A;
-  --accent: #8B6F47;
-  --accent-light: #C4A882;
-  --accent-bg: #F0E8DC;
-  --green: #2D6A4F;
-  --green-bg: #D8F3DC;
-  --red: #B5200D;
-  --red-bg: #FFE5E2;
-  --yellow: #8B6000;
-  --yellow-bg: #FFF3CD;
-  --border: #E0D9CE;
+  --linen: #FBF1E6;
+  --warm-white: #FFFFFF;
+  --charcoal: #2A1D14;
+  --mid: #7A6A5C;
+  --light: #C9B8A6;
+  --accent: #C1452A;
+  --accent-light: #E07A52;
+  --accent-bg: #FBE2D6;
+  --gold: #C8932A;
+  --gold-bg: #F8E8C4;
+  --teal: #1F7A6C;
+  --teal-bg: #D7F0EA;
+  --green: #1E7A4B;
+  --green-bg: #D7F3E1;
+  --red: #C23B2B;
+  --red-bg: #FCE2DC;
+  --yellow: #9A6B0C;
+  --yellow-bg: #FBEAC4;
+  --border: #ECDCC8;
+  --gradient: linear-gradient(135deg, #C1452A 0%, #D9762F 55%, #C8932A 100%);
 }
 
 body {
@@ -30,16 +35,18 @@ textarea {
   width: 100%;
   padding: 11px 13px;
   border: 1.5px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 15px;
   background: var(--warm-white);
   color: var(--charcoal);
   outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 textarea {
   resize: none;

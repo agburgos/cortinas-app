@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cortinas — Sistema de Cotizaciones",
-  description: "Gestión de clientes, productos, cotizaciones y ventas de cortinas",
+  title: "Cortinajes Claudia Burgos — Cotizaciones",
+  description: "Gestión de clientes, productos, cotizaciones, ventas e instalaciones de cortinas",
 };
 
 export default function RootLayout({

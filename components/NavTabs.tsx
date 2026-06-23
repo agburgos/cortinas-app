@@ -7,8 +7,10 @@ const TABS = [
   { href: "/", icon: "📊", label: "Inicio" },
   { href: "/cotizar", icon: "📋", label: "Cotizar" },
   { href: "/ventas", icon: "💰", label: "Ventas" },
+  { href: "/instalaciones", icon: "🗓️", label: "Instalar" },
   { href: "/clientes", icon: "👤", label: "Clientes" },
   { href: "/productos", icon: "🪟", label: "Productos" },
+  { href: "/instaladores", icon: "🛠️", label: "Equipo" },
 ];
 
 export default function NavTabs() {
@@ -17,22 +19,27 @@ export default function NavTabs() {
 
   return (
     <>
-      <nav className="bg-[var(--warm-white)] border-b border-[var(--border)] sticky top-0 z-50">
-        <div className="max-w-[480px] mx-auto flex items-center justify-between px-4 py-3">
-          <div className="text-lg font-bold tracking-tight text-[var(--accent)]">
-            ✦ Cortinas<span className="text-[var(--charcoal)]">Pro</span>
+      <nav className="sticky top-0 z-50" style={{ background: "var(--gradient)" }}>
+        <div className="max-w-[480px] mx-auto flex items-center justify-between px-4 py-3.5">
+          <div className="leading-tight">
+            <div className="text-[17px] font-extrabold tracking-tight text-white drop-shadow-sm">
+              Cortinajes
+            </div>
+            <div className="text-[11px] font-semibold text-white/85 -mt-0.5 tracking-wide">
+              Claudia Burgos
+            </div>
           </div>
-          <div className="text-xs text-[var(--mid)]">{today}</div>
+          <div className="text-xs font-medium text-white/85 bg-white/15 rounded-full px-2.5 py-1">{today}</div>
         </div>
       </nav>
-      <div className="flex bg-[var(--warm-white)] border-b border-[var(--border)] overflow-x-auto sticky top-[49px] z-40">
+      <div className="flex bg-[var(--warm-white)] border-b border-[var(--border)] overflow-x-auto sticky top-[64px] z-40 shadow-sm">
         {TABS.map((tab) => {
           const active = pathname === tab.href;
           return (
             <Link
               key={tab.href}
               href={tab.href}
-              className={`flex-1 min-w-[70px] px-1.5 py-2.5 text-[11px] font-semibold text-center whitespace-nowrap border-b-2 transition-colors ${
+              className={`flex-1 min-w-[64px] px-1 py-2.5 text-[10.5px] font-semibold text-center whitespace-nowrap border-b-[3px] transition-colors ${
                 active
                   ? "text-[var(--accent)] border-[var(--accent)]"
                   : "text-[var(--mid)] border-transparent"

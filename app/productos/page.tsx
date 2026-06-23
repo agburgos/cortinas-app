@@ -4,17 +4,17 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Producto, TIPO_LABEL, TipoProducto } from "@/lib/types";
 import { fmt } from "@/lib/format";
-import { Card, Empty, Btn } from "@/components/ui";
+import { Card, Empty, Btn, Badge } from "@/components/ui";
 
 const EJEMPLOS: Omit<Producto, "id" | "created_at">[] = [
-  { nombre: "Roller Blackout", tipo: "roller", precio_m2: 18000, precio_unidad: 0, descripcion: "Oscurece 99%" },
-  { nombre: "Roller Sunscreen 5%", tipo: "roller", precio_m2: 15000, precio_unidad: 0, descripcion: "Filtro solar, vista hacia afuera" },
-  { nombre: "Screener 3%", tipo: "screener", precio_m2: 20000, precio_unidad: 0, descripcion: "Alta transparencia" },
-  { nombre: "Cortina Lino", tipo: "cortina", precio_m2: 22000, precio_unidad: 0, descripcion: "Pliegues franceses" },
-  { nombre: "Cortina Blackout Tela", tipo: "cortina", precio_m2: 25000, precio_unidad: 0, descripcion: "Forro oscurecedor" },
-  { nombre: "Instalación básica", tipo: "instalacion", precio_m2: 0, precio_unidad: 15000, descripcion: "Por ventana" },
-  { nombre: "Instalación premium", tipo: "instalacion", precio_m2: 0, precio_unidad: 25000, descripcion: "Incluye riel y accesorios" },
-  { nombre: "Riel doble", tipo: "accesorio", precio_m2: 0, precio_unidad: 12000, descripcion: "Para cortina + blackout" },
+  { nombre: "Roller Blackout", tipo: "roller", marca: "Mantex", precio_m2: 18000, precio_unidad: 0, costo_base: 10000, descripcion: "Oscurece 99%" },
+  { nombre: "Roller Sunscreen 5%", tipo: "roller", marca: "Mantex", precio_m2: 15000, precio_unidad: 0, costo_base: 8500, descripcion: "Filtro solar, vista hacia afuera" },
+  { nombre: "Screener 3%", tipo: "screener", marca: "Vescom", precio_m2: 20000, precio_unidad: 0, costo_base: 11500, descripcion: "Alta transparencia" },
+  { nombre: "Cortina Lino", tipo: "cortina", marca: "Decotex", precio_m2: 22000, precio_unidad: 0, costo_base: 13000, descripcion: "Pliegues franceses" },
+  { nombre: "Cortina Blackout Tela", tipo: "cortina", marca: "Decotex", precio_m2: 25000, precio_unidad: 0, costo_base: 15000, descripcion: "Forro oscurecedor" },
+  { nombre: "Instalación básica", tipo: "instalacion", marca: null, precio_m2: 0, precio_unidad: 15000, costo_base: 10000, descripcion: "Por ventana" },
+  { nombre: "Instalación premium", tipo: "instalacion", marca: null, precio_m2: 0, precio_unidad: 25000, costo_base: 16000, descripcion: "Incluye riel y accesorios" },
+  { nombre: "Riel doble", tipo: "accesorio", marca: "Forma", precio_m2: 0, precio_unidad: 12000, costo_base: 7000, descripcion: "Para cortina + blackout" },
 ];
 
 export default function ProductosPage() {
@@ -24,8 +24,10 @@ export default function ProductosPage() {
   const [form, setForm] = useState({
     nombre: "",
     tipo: "roller" as TipoProducto,
+    marca: "",
     precioM2: "",
     precioUnid: "",
+    costoBase: "",
     desc: "",
   });
 
@@ -46,11 +48,13 @@ export default function ProductosPage() {
     await supabase.from("productos").insert({
       nombre: form.nombre.trim(),
       tipo: form.tipo,
+      marca: form.marca.trim() || null,
       precio_m2: isUnit ? 0 : parseFloat(form.precioM2) || 0,
       precio_unidad: isUnit ? parseFloat(form.precioUnid) || 0 : 0,
+      costo_base: parseFloat(form.costoBase) || 0,
       descripcion: form.desc,
     });
-    setForm({ nombre: "", tipo: "roller", precioM2: "", precioUnid: "", desc: "" });
+    setForm({ nombre: "", tipo: "roller", marca: "", precioM2: "", precioUnid: "", costoBase: "", desc: "" });
     setOpen(false);
     load();
   }
@@ -81,7 +85,7 @@ export default function ProductosPage() {
         <Btn variant="sm-secondary" onClick={() => setOpen(true)}>+ Nuevo</Btn>
       </div>
       <p className="text-[13px] text-[var(--mid)] mb-3">
-        Telas, rollers y servicios con sus precios por m²
+        Telas, rollers y servicios con su precio al cliente y costo base
       </p>
 
       {!productos.length ? (
@@ -92,25 +96,39 @@ export default function ProductosPage() {
       ) : (
         Object.entries(grupos).map(([tipo, prods]) => (
           <Card key={tipo} title={TIPO_LABEL[tipo as TipoProducto] || tipo}>
-            {prods.map((p) => (
-              <div key={p.id} className="flex items-center justify-between py-3 border-b border-[var(--border)] last:border-b-0">
-                <div>
-                  <div className="text-[15px] font-semibold">{p.nombre}</div>
-                  {p.descripcion && <div className="text-xs text-[var(--mid)] mt-0.5">{p.descripcion}</div>}
-                </div>
-                <div className="text-right">
-                  <div className="text-[15px] font-bold text-[var(--accent)]">
-                    {p.precio_m2 > 0 ? `${fmt(p.precio_m2)}/m²` : `${fmt(p.precio_unidad)}/u`}
+            {prods.map((p) => {
+              const precio = p.precio_m2 > 0 ? p.precio_m2 : p.precio_unidad;
+              const margen = precio - p.costo_base;
+              const margenPct = precio > 0 ? Math.round((margen / precio) * 100) : 0;
+              return (
+                <div key={p.id} className="py-3 border-b border-[var(--border)] last:border-b-0">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[15px] font-semibold">{p.nombre}</div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        {p.marca && <Badge color="gold">{p.marca}</Badge>}
+                        {p.descripcion && <div className="text-xs text-[var(--mid)]">{p.descripcion}</div>}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[15px] font-bold text-[var(--accent)]">
+                        {p.precio_m2 > 0 ? `${fmt(p.precio_m2)}/m²` : `${fmt(p.precio_unidad)}/u`}
+                      </div>
+                      <button onClick={() => deleteProducto(p.id)} className="text-[11px] text-[var(--light)] mt-0.5">
+                        eliminar
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => deleteProducto(p.id)}
-                    className="text-[11px] text-[var(--light)] mt-0.5"
-                  >
-                    eliminar
-                  </button>
+                  <div className="flex items-center gap-3 mt-2 text-[11px] text-[var(--mid)]">
+                    <span>Costo base: <strong className="text-[var(--charcoal)]">{fmt(p.costo_base)}</strong></span>
+                    <span>·</span>
+                    <span>
+                      Margen: <strong className={margen >= 0 ? "text-[var(--teal)]" : "text-[var(--red)]"}>{fmt(margen)} ({margenPct}%)</strong>
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </Card>
         ))
       )}
@@ -128,6 +146,10 @@ export default function ProductosPage() {
               <input value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Roller Blackout Premium" />
             </div>
             <div className="mb-3.5">
+              <label>Marca (opcional)</label>
+              <input value={form.marca} onChange={(e) => setForm({ ...form, marca: e.target.value })} placeholder="Mantex" />
+            </div>
+            <div className="mb-3.5">
               <label>Tipo</label>
               <select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value as TipoProducto })}>
                 <option value="roller">Roller</option>
@@ -137,17 +159,26 @@ export default function ProductosPage() {
                 <option value="accesorio">Accesorio</option>
               </select>
             </div>
-            {!isUnit ? (
+            <div className="grid grid-cols-2 gap-2.5">
+              {!isUnit ? (
+                <div className="mb-3.5">
+                  <label>Precio cliente ($/m²)</label>
+                  <input type="number" value={form.precioM2} onChange={(e) => setForm({ ...form, precioM2: e.target.value })} placeholder="15000" />
+                </div>
+              ) : (
+                <div className="mb-3.5">
+                  <label>Precio cliente ($/u)</label>
+                  <input type="number" value={form.precioUnid} onChange={(e) => setForm({ ...form, precioUnid: e.target.value })} placeholder="25000" />
+                </div>
+              )}
               <div className="mb-3.5">
-                <label>Precio por m² ($)</label>
-                <input type="number" value={form.precioM2} onChange={(e) => setForm({ ...form, precioM2: e.target.value })} placeholder="15000" />
+                <label>Costo base ($)</label>
+                <input type="number" value={form.costoBase} onChange={(e) => setForm({ ...form, costoBase: e.target.value })} placeholder="9000" />
               </div>
-            ) : (
-              <div className="mb-3.5">
-                <label>Precio unitario ($)</label>
-                <input type="number" value={form.precioUnid} onChange={(e) => setForm({ ...form, precioUnid: e.target.value })} placeholder="25000" />
-              </div>
-            )}
+            </div>
+            <p className="text-[11px] text-[var(--mid)] mb-3.5 -mt-1">
+              El costo base es lo que pagas tú (proveedor); el precio cliente es lo que cobras. La diferencia es el margen.
+            </p>
             <div className="mb-3.5">
               <label>Descripción (opcional)</label>
               <input value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} placeholder="Oscurece 99%, disponible en 12 colores" />
