@@ -13,9 +13,6 @@ export default function CotizarPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [apiKey, setApiKey] = useState("");
-  const [apiKeyInput, setApiKeyInput] = useState("");
-
   const [clienteSearch, setClienteSearch] = useState("");
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [showRapido, setShowRapido] = useState(false);
@@ -30,9 +27,6 @@ export default function CotizarPage() {
 
   const [items, setItems] = useState<CotizacionItem[]>([]);
   const [notas, setNotas] = useState("");
-  const [generando, setGenerando] = useState(false);
-  const [textoIA, setTextoIA] = useState("");
-  const [errorIA, setErrorIA] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -43,21 +37,8 @@ export default function CotizarPage() {
       setProductos(p.data ?? []);
       setClientes(c.data ?? []);
       setLoading(false);
-      const k = localStorage.getItem("cortinas_apikey");
-      if (k) {
-        setApiKey(k);
-        setApiKeyInput(k);
-      }
     })();
   }, []);
-
-  function saveApiKey() {
-    const k = apiKeyInput.trim();
-    if (!k) return alert("Ingresa una API key");
-    localStorage.setItem("cortinas_apikey", k);
-    setApiKey(k);
-    alert("✓ API Key guardada");
-  }
 
   const producto = productos.find((p) => p.id === productoId) || null;
   const esM2 = !!producto && producto.precio_m2 > 0;
@@ -148,7 +129,6 @@ export default function CotizarPage() {
     setCantidad("1");
     setCantidadFixed("1");
     setNota("");
-    setTextoIA("");
   }
 
   function removeItem(i: number) {
@@ -157,86 +137,35 @@ export default function CotizarPage() {
 
   const total = items.reduce((a, it) => a + it.subtotal, 0);
 
-  async function generarConIA() {
-    if (!apiKey) return alert("Primero guarda tu API Key de Anthropic arriba");
-    if (!items.length) return alert("Agrega al menos un producto");
-    setGenerando(true);
-    setErrorIA("");
-    setTextoIA("");
-
+  function textoResumen(): string {
     const itemsTexto = items
-      .map((it) => `- ${it.nombre} (${TIPO_LABEL[it.tipo]}): ${it.detalle}${it.nota ? " — " + it.nota : ""} → ${fmt(it.subtotal)}`)
+      .map((it) => `• ${it.nombre} (${it.detalle}${it.nota ? " — " + it.nota : ""}): ${fmt(it.subtotal)}`)
       .join("\n");
-
-    const prompt = `Eres el asistente de una empresa de cortinas en Chile. Genera una cotización profesional y amigable para enviar por WhatsApp al cliente.
-
-Cliente: ${clienteSeleccionado ? clienteSeleccionado.nombre : "Cliente"}
-${clienteSeleccionado?.telefono ? "Teléfono: " + clienteSeleccionado.telefono : ""}
-${clienteSeleccionado?.direccion ? "Dirección: " + clienteSeleccionado.direccion : ""}
-
-Productos cotizados:
-${itemsTexto}
-
-TOTAL: ${fmt(total)}
-${notas ? "Notas adicionales: " + notas : ""}
-
-Redacta el mensaje de cotización en español chileno, con un tono cálido y profesional. Incluye un saludo, el detalle de los productos, el total con IVA si aplica (indica si es con o sin IVA), condiciones de pago sugeridas (50% anticipo, 50% instalación), tiempo estimado de entrega (7-10 días hábiles), y una despedida. Usa emojis con moderación. El mensaje debe ser conciso y directo, adecuado para WhatsApp.`;
-
-    try {
-      const res = await fetch("/api/generar-cotizacion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey, prompt }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setTextoIA(data.texto);
-    } catch (e) {
-      setErrorIA(e instanceof Error ? e.message : "Error desconocido");
-    } finally {
-      setGenerando(false);
-    }
+    return `Cotización${clienteSeleccionado ? " para " + clienteSeleccionado.nombre : ""}\n\n${itemsTexto}\n\nTOTAL: ${fmt(total)}${notas ? "\n\nNotas: " + notas : ""}`;
   }
 
-  function copiar() {
-    navigator.clipboard.writeText(textoIA).then(() => alert("✓ Copiado al portapapeles"));
+  function copiarResumen() {
+    navigator.clipboard.writeText(textoResumen()).then(() => alert("✓ Copiado al portapapeles"));
   }
 
   function shareWhatsApp() {
     const tel = clienteSeleccionado?.telefono ? clienteSeleccionado.telefono.replace(/\D/g, "") : "";
-    const msg = encodeURIComponent(textoIA);
+    const msg = encodeURIComponent(textoResumen());
     window.open(tel ? `https://wa.me/${tel}?text=${msg}` : `https://wa.me/?text=${msg}`, "_blank");
   }
 
-  async function resetCotizador() {
+  function resetCotizador() {
     setClienteId(null);
     setClienteSearch("");
     setItems([]);
     setNotas("");
-    setTextoIA("");
-    setErrorIA("");
   }
 
   async function saveCotizacion() {
     if (!items.length) return alert("Agrega al menos un producto");
-    await supabase.from("cotizaciones").insert({
-      cliente_id: clienteId,
-      items,
-      total,
-      notas,
-      texto_ia: "",
-      estado: "Borrador",
-    });
-    alert("✓ Cotización guardada");
-    resetCotizador();
-    router.push("/");
-  }
-
-  async function saveCotizacionConIA() {
-    if (!items.length) return;
     const { data: cotiz } = await supabase
       .from("cotizaciones")
-      .insert({ cliente_id: clienteId, items, total, notas, texto_ia: textoIA, estado: "Enviada" })
+      .insert({ cliente_id: clienteId, items, total, notas, texto_ia: "", estado: "Enviada" })
       .select()
       .single();
     await supabase.from("ventas").insert({
@@ -246,7 +175,7 @@ Redacta el mensaje de cotización en español chileno, con un tono cálido y pro
       estado_pago: "pendiente",
       monto_pagado: 0,
       instalado: false,
-      notas: textoIA.slice(0, 100),
+      notas,
     });
     alert("✓ Cotización guardada y venta creada");
     resetCotizador();
@@ -258,19 +187,6 @@ Redacta el mensaje de cotización en español chileno, con un tono cálido y pro
   return (
     <div>
       <div className="text-xl font-extrabold mb-4">Nueva Cotización</div>
-
-      <div className="bg-[var(--accent-bg)] border-[1.5px] border-[var(--accent-light)] rounded-2xl p-4 mb-3.5" style={{ opacity: apiKey ? 0.5 : 1 }}>
-        <p className="text-[13px] text-[var(--accent)] mb-2.5 leading-relaxed">
-          🔑 Para generar cotizaciones con IA, ingresa tu API Key de Anthropic. Se guarda solo en este dispositivo.
-        </p>
-        <div className="grid grid-cols-2 gap-2.5">
-          <input type="password" value={apiKeyInput} onChange={(e) => setApiKeyInput(e.target.value)} placeholder="sk-ant-..." />
-          <Btn variant="sm-secondary" onClick={saveApiKey} className="self-start">Guardar</Btn>
-        </div>
-        <p className="mt-2 text-[11px] text-[var(--accent)]">
-          Obtén tu key en <strong>console.anthropic.com</strong>
-        </p>
-      </div>
 
       <Card title="Cliente">
         <div className="relative">
@@ -381,31 +297,12 @@ Redacta el mensaje de cotización en español chileno, con un tono cálido y pro
             <textarea value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Observaciones, condiciones, plazos..." />
           </Card>
 
-          <Btn variant="primary" onClick={generarConIA} disabled={generando} className="mb-2.5">
-            {generando ? "Generando..." : "✦ Generar cotización con IA"}
-          </Btn>
-          <Btn variant="secondary" onClick={saveCotizacion}>Guardar sin IA</Btn>
+          <div className="flex gap-2 mb-3.5">
+            <Btn variant="sm-secondary" onClick={copiarResumen}>Copiar resumen</Btn>
+            <Btn variant="sm-green" onClick={shareWhatsApp}>WhatsApp</Btn>
+          </div>
 
-          {(generando || textoIA || errorIA) && (
-            <div className="mt-3.5">
-              <Card title="Cotización generada">
-                {generando && <div className="text-[var(--mid)] text-[13px] py-5">Generando cotización...</div>}
-                {errorIA && <div className="text-[var(--red)] text-[13px]">Error: {errorIA}</div>}
-                {textoIA && (
-                  <>
-                    <div className="bg-[var(--linen)] border-[1.5px] border-[var(--border)] rounded-lg p-3.5 text-[13px] leading-relaxed whitespace-pre-wrap break-words max-h-[300px] overflow-y-auto">
-                      {textoIA}
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <Btn variant="sm-green" onClick={copiar}>Copiar</Btn>
-                      <Btn variant="sm-secondary" onClick={shareWhatsApp}>WhatsApp</Btn>
-                      <Btn variant="sm-primary" onClick={saveCotizacionConIA}>Guardar</Btn>
-                    </div>
-                  </>
-                )}
-              </Card>
-            </div>
-          )}
+          <Btn variant="primary" onClick={saveCotizacion}>Guardar cotización</Btn>
         </>
       )}
 

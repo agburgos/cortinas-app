@@ -6,7 +6,7 @@ App de gestión de clientes, productos, cotizaciones y ventas para una empresa d
 
 - Next.js 16 (App Router) + TypeScript + Tailwind CSS
 - Supabase (Postgres + REST) como base de datos
-- Anthropic API (Claude) para redactar cotizaciones en lenguaje natural, vía un endpoint propio (`/api/generar-cotizacion`) que evita exponer la key del usuario a servicios externos del lado del cliente
+- Cotizador basado en cálculo (m² × precio × cantidad, o precio unitario × cantidad), sin IA
 
 ## Setup
 
@@ -31,8 +31,6 @@ App de gestión de clientes, productos, cotizaciones y ventas para una empresa d
    ```bash
    npm run dev
    ```
-
-5. En la pestaña "Cotizar", ingresa tu API Key de Anthropic (se guarda solo en el `localStorage` del navegador) para habilitar la generación de cotizaciones con IA.
 
 ## Notas de seguridad
 
