@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { Cliente, Cotizacion, CotizacionItem, Producto, TIPO_LABEL } from "@/lib/types";
+import { Cliente, Cotizacion, CotizacionItem, Producto, tipoLabel } from "@/lib/types";
 import { fmt, fmtDate } from "@/lib/format";
 import { generarCotizacionPDF } from "@/lib/pdf";
 import { getConfiguracion } from "@/lib/configuracion";
@@ -213,7 +213,7 @@ export default function CotizacionDetallePage() {
             <option value="">Seleccionar...</option>
             {productos.map((p) => (
               <option key={p.id} value={p.id}>
-                [{TIPO_LABEL[p.tipo]}] {p.nombre} — {p.precio_m2 > 0 ? `${fmt(p.precio_m2)}/m²` : `${fmt(p.precio_unidad)}/u`}
+                [{tipoLabel(p.tipo)}] {p.nombre} — {p.precio_m2 > 0 ? `${fmt(p.precio_m2)}/m²` : `${fmt(p.precio_unidad)}/u`}
               </option>
             ))}
           </select>

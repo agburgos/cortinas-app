@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { TIPO_LABEL, TipoProducto } from "@/lib/types";
+import { TipoProducto, tipoLabel } from "@/lib/types";
 import { fmt } from "@/lib/format";
 import { Card, Btn } from "@/components/ui";
 import TerminosModal from "@/components/TerminosModal";
@@ -172,7 +172,7 @@ export default function PublicQuoteForm() {
             <option value="">Seleccionar...</option>
             {productos.map((p) => (
               <option key={p.id} value={p.id}>
-                [{TIPO_LABEL[p.tipo]}] {p.nombre} — {p.precio_m2 > 0 ? `${fmt(p.precio_m2)}/m²` : `${fmt(p.precio_unidad)}/u`}
+                [{tipoLabel(p.tipo)}] {p.nombre} — {p.precio_m2 > 0 ? `${fmt(p.precio_m2)}/m²` : `${fmt(p.precio_unidad)}/u`}
               </option>
             ))}
           </select>

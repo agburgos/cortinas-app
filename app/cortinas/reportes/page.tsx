@@ -14,7 +14,7 @@ import {
   Cell,
 } from "recharts";
 import { supabase } from "@/lib/supabase";
-import { Cotizacion, TIPO_LABEL, TipoProducto, Venta } from "@/lib/types";
+import { Cotizacion, tipoLabel, Venta } from "@/lib/types";
 import { fmt } from "@/lib/format";
 import { Card, Empty } from "@/components/ui";
 import DateRangeFilter from "@/components/DateRangeFilter";
@@ -84,7 +84,7 @@ export default function ReportesPage() {
     });
   });
   const dataTipo = Array.from(porTipo.entries()).map(([tipo, valor]) => ({
-    name: TIPO_LABEL[tipo as TipoProducto] || tipo,
+    name: tipoLabel(tipo),
     value: valor,
   }));
 

@@ -1,4 +1,12 @@
-export type TipoProducto = 'roller' | 'sunscreen' | 'cortina' | 'instalacion' | 'accesorio';
+export type TipoProducto = string;
+export type UnidadMedida = 'm2' | 'unidad';
+
+export interface TipoProductoRow {
+  id: string;
+  nombre: string;
+  unidad: UnidadMedida;
+  created_at: string;
+}
 
 export interface Cliente {
   id: string;
@@ -95,12 +103,17 @@ export interface Configuracion {
   updated_at: string;
 }
 
-export const TIPO_LABEL: Record<TipoProducto, string> = {
+export const TIPO_LABEL: Record<string, string> = {
   roller: 'Roller',
   sunscreen: 'Sunscreen',
   cortina: 'Cortina tela',
   instalacion: 'Instalación',
   accesorio: 'Accesorio',
 };
+
+export function tipoLabel(tipo: string): string {
+  if (TIPO_LABEL[tipo]) return TIPO_LABEL[tipo];
+  return tipo.charAt(0).toUpperCase() + tipo.slice(1);
+}
 
 export const EMPRESA_NOMBRE = 'Cortinajes Claudia Burgos';

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { Producto, TIPO_LABEL, TipoProducto } from "@/lib/types";
+import { Producto, TipoProducto, TipoProductoRow, tipoLabel } from "@/lib/types";
 import { fmt } from "@/lib/format";
 import { Card, Empty, Btn, Badge } from "@/components/ui";
 
@@ -17,9 +18,33 @@ const EJEMPLOS: Omit<Producto, "id" | "created_at">[] = [
   { nombre: "Riel doble", tipo: "accesorio", marca: "Forma", precio_m2: 0, precio_unidad: 12000, costo_base: 7000, descripcion: "Para cortina + blackout" },
 ];
 
+const TIPOS_DEFAULT: { nombre: string; unidad: "m2" | "unidad" }[] = [
+  { nombre: "roller", unidad: "m2" },
+  { nombre: "sunscreen", unidad: "m2" },
+  { nombre: "cortina", unidad: "m2" },
+  { nombre: "instalacion", unidad: "unidad" },
+  { nombre: "accesorio", unidad: "unidad" },
+];
+
+// Antes de correr la migración de "tipos_producto", se reconstruye la lista a partir
+// de los productos ya guardados, para no bloquear el mantenedor con datos existentes.
+function tiposFallback(productos: Producto[]): TipoProductoRow[] {
+  const mapa = new Map<string, "m2" | "unidad">();
+  TIPOS_DEFAULT.forEach((t) => mapa.set(t.nombre, t.unidad));
+  productos.forEach((p) => {
+    if (!mapa.has(p.tipo)) mapa.set(p.tipo, p.precio_m2 > 0 ? "m2" : "unidad");
+  });
+  return Array.from(mapa.entries()).map(([nombre, unidad]) => ({
+    id: nombre,
+    nombre,
+    unidad,
+    created_at: "",
+  }));
+}
+
 const FORM_VACIO = {
   nombre: "",
-  tipo: "roller" as TipoProducto,
+  tipo: "" as TipoProducto,
   marca: "",
   precioM2: "",
   precioUnid: "",
@@ -29,14 +54,19 @@ const FORM_VACIO = {
 
 export default function ProductosPage() {
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [tipos, setTipos] = useState<TipoProductoRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(FORM_VACIO);
 
   async function load() {
-    const { data } = await supabase.from("productos").select("*").order("created_at", { ascending: true });
-    setProductos(data ?? []);
+    const [{ data: p }, { data: t }] = await Promise.all([
+      supabase.from("productos").select("*").order("created_at", { ascending: true }),
+      supabase.from("tipos_producto").select("*").order("created_at", { ascending: true }),
+    ]);
+    setProductos(p ?? []);
+    setTipos(t?.length ? t : tiposFallback(p ?? []));
     setLoading(false);
   }
 
@@ -44,11 +74,11 @@ export default function ProductosPage() {
     load();
   }, []);
 
-  const isUnit = form.tipo === "instalacion" || form.tipo === "accesorio";
+  const isUnit = tipos.find((t) => t.nombre === form.tipo)?.unidad === "unidad";
 
   function abrirNuevo() {
     setEditId(null);
-    setForm(FORM_VACIO);
+    setForm({ ...FORM_VACIO, tipo: tipos[0]?.nombre || "roller" });
     setOpen(true);
   }
 
@@ -111,7 +141,12 @@ export default function ProductosPage() {
     <div>
       <div className="flex justify-between items-center mb-3">
         <div className="text-xl font-extrabold tracking-tight">Productos</div>
-        <Btn variant="sm-secondary" onClick={abrirNuevo}>+ Nuevo</Btn>
+        <div className="flex gap-2">
+          <Link href="/cortinas/tipos-producto">
+            <Btn variant="sm-ghost">🏷️ Tipos</Btn>
+          </Link>
+          <Btn variant="sm-secondary" onClick={abrirNuevo}>+ Nuevo</Btn>
+        </div>
       </div>
       <p className="text-[13px] text-[var(--mid)] mb-3">
         Telas, rollers y servicios con su precio al cliente y costo base
@@ -124,7 +159,7 @@ export default function ProductosPage() {
         </>
       ) : (
         Object.entries(grupos).map(([tipo, prods]) => (
-          <Card key={tipo} title={TIPO_LABEL[tipo as TipoProducto] || tipo}>
+          <Card key={tipo} title={tipoLabel(tipo)}>
             {prods.map((p) => {
               const precio = p.precio_m2 > 0 ? p.precio_m2 : p.precio_unidad;
               const margen = precio - p.costo_base;
@@ -185,12 +220,12 @@ export default function ProductosPage() {
             </div>
             <div className="mb-3.5">
               <label>Tipo</label>
-              <select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value as TipoProducto })}>
-                <option value="roller">Roller</option>
-                <option value="sunscreen">Sunscreen</option>
-                <option value="cortina">Cortina de tela</option>
-                <option value="instalacion">Instalación</option>
-                <option value="accesorio">Accesorio</option>
+              <select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
+                {tipos.map((t) => (
+                  <option key={t.id} value={t.nombre}>
+                    {tipoLabel(t.nombre)} ({t.unidad === "m2" ? "m²" : "unidad"})
+                  </option>
+                ))}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-2.5">
