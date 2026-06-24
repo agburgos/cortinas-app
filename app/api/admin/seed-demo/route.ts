@@ -9,15 +9,15 @@ const TIPOS_DEFAULT = [
   { nombre: "accesorio", unidad: "unidad" },
 ];
 
-const PRODUCTOS_DEFAULT = [
-  { nombre: "Roller Blackout", tipo: "roller", marca: "Mantex", precio_m2: 18000, precio_unidad: 0, costo_base: 10000, descripcion: "Oscurece 99%" },
-  { nombre: "Roller Sunscreen 5%", tipo: "roller", marca: "Mantex", precio_m2: 15000, precio_unidad: 0, costo_base: 8500, descripcion: "Filtro solar, vista hacia afuera" },
-  { nombre: "Sunscreen 3%", tipo: "sunscreen", marca: "Vescom", precio_m2: 20000, precio_unidad: 0, costo_base: 11500, descripcion: "Alta transparencia" },
-  { nombre: "Cortina Lino", tipo: "cortina", marca: "Decotex", precio_m2: 22000, precio_unidad: 0, costo_base: 13000, descripcion: "Pliegues franceses" },
-  { nombre: "Cortina Blackout Tela", tipo: "cortina", marca: "Decotex", precio_m2: 25000, precio_unidad: 0, costo_base: 15000, descripcion: "Forro oscurecedor" },
-  { nombre: "Instalación básica", tipo: "instalacion", marca: null, precio_m2: 0, precio_unidad: 15000, costo_base: 10000, descripcion: "Por ventana" },
-  { nombre: "Instalación premium", tipo: "instalacion", marca: null, precio_m2: 0, precio_unidad: 25000, costo_base: 16000, descripcion: "Incluye riel y accesorios" },
-  { nombre: "Riel doble", tipo: "accesorio", marca: "Forma", precio_m2: 0, precio_unidad: 12000, costo_base: 7000, descripcion: "Para cortina + blackout" },
+const PRODUCTOS_DEMO = [
+  { nombre: "Roller Blackout (demo)", tipo: "roller", marca: "Mantex", precio_m2: 18000, precio_unidad: 0, costo_base: 10000, descripcion: "Oscurece 99%" },
+  { nombre: "Roller Sunscreen 5% (demo)", tipo: "roller", marca: "Mantex", precio_m2: 15000, precio_unidad: 0, costo_base: 8500, descripcion: "Filtro solar, vista hacia afuera" },
+  { nombre: "Sunscreen 3% (demo)", tipo: "sunscreen", marca: "Vescom", precio_m2: 20000, precio_unidad: 0, costo_base: 11500, descripcion: "Alta transparencia" },
+  { nombre: "Cortina Lino (demo)", tipo: "cortina", marca: "Decotex", precio_m2: 22000, precio_unidad: 0, costo_base: 13000, descripcion: "Pliegues franceses" },
+  { nombre: "Cortina Blackout Tela (demo)", tipo: "cortina", marca: "Decotex", precio_m2: 25000, precio_unidad: 0, costo_base: 15000, descripcion: "Forro oscurecedor" },
+  { nombre: "Instalación básica (demo)", tipo: "instalacion", marca: null, precio_m2: 0, precio_unidad: 15000, costo_base: 10000, descripcion: "Por ventana" },
+  { nombre: "Instalación premium (demo)", tipo: "instalacion", marca: null, precio_m2: 0, precio_unidad: 25000, costo_base: 16000, descripcion: "Incluye riel y accesorios" },
+  { nombre: "Riel doble (demo)", tipo: "accesorio", marca: "Forma", precio_m2: 0, precio_unidad: 12000, costo_base: 7000, descripcion: "Para cortina + blackout" },
 ];
 
 const INSTALADORES_DEMO = [
@@ -70,19 +70,40 @@ export async function POST(req: NextRequest) {
     await admin.from("tipos_producto").insert(TIPOS_DEFAULT);
   }
 
-  let { data: productos } = await admin.from("productos").select("*");
-  if (!productos?.length) {
-    const { data: nuevos } = await admin.from("productos").insert(PRODUCTOS_DEFAULT).select();
-    productos = nuevos ?? [];
+  const { data: existentes } = await admin.from("productos").select("nombre");
+  const nombresExistentes = new Set((existentes ?? []).map((p) => p.nombre));
+  const faltantes = PRODUCTOS_DEMO.filter((p) => !nombresExistentes.has(p.nombre));
+  let productosDemo: ProductoRow[] = [];
+  if (faltantes.length) {
+    const { data: nuevos, error: errorProductos } = await admin.from("productos").insert(faltantes).select();
+    if (errorProductos) {
+      return NextResponse.json({ error: "No se pudieron crear productos de prueba: " + errorProductos.message }, { status: 500 });
+    }
+    productosDemo = nuevos ?? [];
   }
-  const productosTyped = (productos ?? []) as ProductoRow[];
+
+  const { data: todosProductos } = await admin.from("productos").select("*");
+  const productosTyped = (todosProductos ?? []) as ProductoRow[];
   if (!productosTyped.length) {
     return NextResponse.json({ error: "No hay productos para generar cotizaciones de prueba" }, { status: 400 });
   }
 
-  const { data: instaladores } = await admin.from("instaladores").insert(INSTALADORES_DEMO).select();
-  const { data: clientes } = await admin.from("clientes").insert(CLIENTES_DEMO).select();
-  if (!clientes?.length) return NextResponse.json({ error: "No se pudieron crear clientes de prueba" }, { status: 500 });
+  const { data: instaladoresExistentes } = await admin.from("instaladores").select("*");
+  const nombresInstaladores = new Set((instaladoresExistentes ?? []).map((i) => i.nombre));
+  const instaladoresFaltantes = INSTALADORES_DEMO.filter((i) => !nombresInstaladores.has(i.nombre));
+  const { data: instaladoresNuevos } = instaladoresFaltantes.length
+    ? await admin.from("instaladores").insert(instaladoresFaltantes).select()
+    : { data: [] };
+  const instaladores = [...(instaladoresExistentes ?? []).filter((i) => i.nombre.endsWith("(demo)")), ...(instaladoresNuevos ?? [])];
+
+  const { data: clientesExistentes } = await admin.from("clientes").select("*");
+  const nombresClientes = new Set((clientesExistentes ?? []).map((c) => c.nombre));
+  const clientesFaltantes = CLIENTES_DEMO.filter((c) => !nombresClientes.has(c.nombre));
+  const { data: clientesNuevos } = clientesFaltantes.length
+    ? await admin.from("clientes").insert(clientesFaltantes).select()
+    : { data: [] };
+  const clientes = [...(clientesExistentes ?? []).filter((c) => c.nombre.endsWith("(demo)")), ...(clientesNuevos ?? [])];
+  if (!clientes.length) return NextResponse.json({ error: "No se pudieron crear clientes de prueba" }, { status: 500 });
 
   let creadas = 0;
   for (let i = 0; i < 16; i++) {
@@ -155,6 +176,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
+    productos: productosDemo.length,
     instaladores: instaladores?.length ?? 0,
     clientes: clientes.length,
     ventas: creadas,
