@@ -29,6 +29,10 @@ export default function ConfiguracionPage() {
   const [nuevoUsuario, setNuevoUsuario] = useState({ nombre: "", email: "", password: "" });
   const [creandoUsuario, setCreandoUsuario] = useState(false);
   const [mensajeUsuario, setMensajeUsuario] = useState<string | null>(null);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ nombre: "", rol: "" });
+  const [guardandoUsuario, setGuardandoUsuario] = useState(false);
+  const [enviandoReset, setEnviandoReset] = useState<string | null>(null);
 
   useEffect(() => {
     load();
@@ -101,6 +105,37 @@ export default function ConfiguracionPage() {
     }
     applyTheme(form.color_accent, form.color_gold, form.color_teal);
     alert("✓ Configuración guardada");
+  }
+
+  function abrirEditarUsuario(u: Usuario) {
+    setEditandoId(u.id);
+    setEditForm({ nombre: u.nombre || "", rol: u.rol });
+  }
+
+  async function guardarUsuario() {
+    if (!editandoId) return;
+    setGuardandoUsuario(true);
+    const { error } = await supabase
+      .from("usuarios")
+      .update({ nombre: editForm.nombre.trim() || null, rol: editForm.rol.trim() || "admin" })
+      .eq("id", editandoId);
+    setGuardandoUsuario(false);
+    if (error) {
+      alert("✗ No se pudo guardar: " + error.message);
+      return;
+    }
+    setEditandoId(null);
+    load();
+  }
+
+  async function enviarReset(email: string) {
+    setEnviandoReset(email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/restablecer-password`,
+    });
+    setEnviandoReset(null);
+    if (error) return alert("✗ No se pudo enviar: " + error.message);
+    alert(`✓ Enlace de restablecimiento enviado a ${email}`);
   }
 
   async function crearUsuario() {
@@ -217,17 +252,44 @@ export default function ConfiguracionPage() {
         {!usuarios.length ? (
           <p className="text-sm text-[var(--mid)]">Sin usuarios registrados</p>
         ) : (
-          usuarios.map((u) => (
-            <div key={u.id} className="flex items-center justify-between py-2.5 border-b border-[var(--border)] last:border-b-0">
-              <div>
-                <div className="text-[14px] font-semibold">{u.nombre || u.email}</div>
-                <div className="text-[11px] text-[var(--mid)] mt-0.5">
-                  {u.email} · desde {fmtDate(u.created_at)}
+          usuarios.map((u) =>
+            editandoId === u.id ? (
+              <div key={u.id} className="py-3 border-b border-[var(--border)] last:border-b-0">
+                <div className="mb-2.5">
+                  <label>Nombre</label>
+                  <input value={editForm.nombre} onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })} placeholder="Nombre completo" />
+                </div>
+                <div className="mb-2.5">
+                  <label>Rol</label>
+                  <input value={editForm.rol} onChange={(e) => setEditForm({ ...editForm, rol: e.target.value })} placeholder="admin" />
+                </div>
+                <div className="flex gap-2">
+                  <Btn variant="sm-primary" onClick={guardarUsuario} disabled={guardandoUsuario}>
+                    {guardandoUsuario ? "Guardando..." : "Guardar"}
+                  </Btn>
+                  <Btn variant="sm-ghost" onClick={() => setEditandoId(null)}>Cancelar</Btn>
                 </div>
               </div>
-              <Badge color="teal">{u.rol}</Badge>
-            </div>
-          ))
+            ) : (
+              <div key={u.id} className="flex items-center justify-between py-2.5 border-b border-[var(--border)] last:border-b-0">
+                <div>
+                  <div className="text-[14px] font-semibold">{u.nombre || u.email}</div>
+                  <div className="text-[11px] text-[var(--mid)] mt-0.5">
+                    {u.email} · desde {fmtDate(u.created_at)}
+                  </div>
+                  <div className="flex gap-3 mt-1">
+                    <button onClick={() => abrirEditarUsuario(u)} className="text-[11px] font-bold text-[var(--accent)]">
+                      editar
+                    </button>
+                    <button onClick={() => enviarReset(u.email)} disabled={enviandoReset === u.email} className="text-[11px] font-bold text-[var(--teal)]">
+                      {enviandoReset === u.email ? "enviando..." : "enviar restablecimiento"}
+                    </button>
+                  </div>
+                </div>
+                <Badge color="teal">{u.rol}</Badge>
+              </div>
+            )
+          )
         )}
       </Card>
 
