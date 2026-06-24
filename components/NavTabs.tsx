@@ -1,12 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { contarCotizacionesWebPendientes } from "@/lib/cotizacionesPendientes";
 
 const TABS = [
   { href: "/cortinas", icon: "📊", label: "Inicio" },
   { href: "/cortinas/cotizar", icon: "📋", label: "Cotizar" },
+  { href: "/cortinas/cotizaciones", icon: "📄", label: "Cotiz." },
   { href: "/cortinas/ventas", icon: "💰", label: "Ventas" },
   { href: "/cortinas/instalaciones", icon: "🗓️", label: "Instalar" },
   { href: "/cortinas/clientes", icon: "👤", label: "Clientes" },
@@ -19,6 +22,16 @@ const TABS = [
 export default function NavTabs({ nombre }: { nombre: string }) {
   const pathname = usePathname();
   const today = new Date().toLocaleDateString("es-CL", { day: "numeric", month: "short" });
+  const [pendientes, setPendientes] = useState(0);
+
+  useEffect(() => {
+    function refrescar() {
+      contarCotizacionesWebPendientes().then(setPendientes);
+    }
+    refrescar();
+    const interval = setInterval(refrescar, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <>
@@ -33,6 +46,14 @@ export default function NavTabs({ nombre }: { nombre: string }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/cortinas/cotizaciones" className="relative w-8 h-8 flex items-center justify-center bg-white/15 rounded-full text-base">
+              🔔
+              {pendientes > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[var(--red)] text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                  {pendientes}
+                </span>
+              )}
+            </Link>
             <div className="text-xs font-medium text-white/85 bg-white/15 rounded-full px-2.5 py-1 max-w-[90px] truncate">
               {nombre || today}
             </div>

@@ -22,7 +22,7 @@ export default function Dashboard() {
       const [c, v, q, i] = await Promise.all([
         supabase.from("clientes").select("*"),
         supabase.from("ventas").select("*").order("fecha", { ascending: false }),
-        supabase.from("cotizaciones").select("*").order("fecha", { ascending: false }),
+        supabase.from("cotizaciones").select("*").order("numero", { ascending: false }),
         supabase.from("instaladores").select("*"),
       ]);
       setClientes(c.data ?? []);
@@ -151,7 +151,8 @@ export default function Dashboard() {
         {!cotizaciones.length ? (
           <Empty text="Sin cotizaciones aún" />
         ) : (
-          cotizaciones.slice(0, 5).map((c) => (
+          <>
+          {cotizaciones.slice(0, 5).map((c) => (
             <div key={c.id} className="flex items-center justify-between py-3 border-b border-[var(--border)] last:border-b-0">
               <div>
                 <div className="text-[15px] font-semibold">{clienteNombre(c.cliente_id)}</div>
@@ -164,7 +165,11 @@ export default function Dashboard() {
                 <Btn variant="sm-ghost" onClick={() => descargarPDF(c)}>PDF</Btn>
               </div>
             </div>
-          ))
+          ))}
+          <Link href="/cortinas/cotizaciones" className="block text-center text-[13px] font-bold text-[var(--accent)] pt-2">
+            Ver todas →
+          </Link>
+          </>
         )}
       </Card>
     </div>
