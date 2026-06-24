@@ -7,14 +7,14 @@ const GOLD: [number, number, number] = [200, 147, 42];
 const CHARCOAL: [number, number, number] = [42, 29, 20];
 const MID: [number, number, number] = [122, 106, 92];
 
-export function generarCotizacionPDF(params: {
+export function construirCotizacionPDF(params: {
   numero: number;
   fecha: string;
   cliente: Cliente | null;
   items: CotizacionItem[];
   total: number;
   notas: string;
-}) {
+}): jsPDF {
   const { numero, fecha, cliente, items, total, notas } = params;
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -136,5 +136,21 @@ export function generarCotizacionPDF(params: {
     Math.min(y, 770)
   );
 
-  doc.save(`Cotizacion-${EMPRESA_NOMBRE.replace(/\s+/g, "")}-${String(numero).padStart(4, "0")}.pdf`);
+  return doc;
+}
+
+export function nombreArchivoCotizacion(numero: number): string {
+  return `Cotizacion-${EMPRESA_NOMBRE.replace(/\s+/g, "")}-${String(numero).padStart(4, "0")}.pdf`;
+}
+
+export function generarCotizacionPDF(params: {
+  numero: number;
+  fecha: string;
+  cliente: Cliente | null;
+  items: CotizacionItem[];
+  total: number;
+  notas: string;
+}) {
+  const doc = construirCotizacionPDF(params);
+  doc.save(nombreArchivoCotizacion(params.numero));
 }

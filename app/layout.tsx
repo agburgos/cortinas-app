@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import AuthGate from "@/components/AuthGate";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cortinajes Claudia Burgos — Cotizaciones",
-  description: "Gestión de clientes, productos, cotizaciones, ventas e instalaciones de cortinas",
+  title: "Cortinajes Claudia Burgos",
+  description: "Cortinas, rollers y screeners a medida. Cotiza online o gestiona tu negocio.",
 };
 
 export default function RootLayout({
@@ -28,9 +27,7 @@ export default function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <AuthGate>{children}</AuthGate>
-      </body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

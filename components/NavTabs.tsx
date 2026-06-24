@@ -5,13 +5,13 @@ import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 const TABS = [
-  { href: "/", icon: "📊", label: "Inicio" },
-  { href: "/cotizar", icon: "📋", label: "Cotizar" },
-  { href: "/ventas", icon: "💰", label: "Ventas" },
-  { href: "/instalaciones", icon: "🗓️", label: "Instalar" },
-  { href: "/clientes", icon: "👤", label: "Clientes" },
-  { href: "/productos", icon: "🪟", label: "Productos" },
-  { href: "/instaladores", icon: "🛠️", label: "Equipo" },
+  { href: "/cortinas", icon: "📊", label: "Inicio" },
+  { href: "/cortinas/cotizar", icon: "📋", label: "Cotizar" },
+  { href: "/cortinas/ventas", icon: "💰", label: "Ventas" },
+  { href: "/cortinas/instalaciones", icon: "🗓️", label: "Instalar" },
+  { href: "/cortinas/clientes", icon: "👤", label: "Clientes" },
+  { href: "/cortinas/productos", icon: "🪟", label: "Productos" },
+  { href: "/cortinas/instaladores", icon: "🛠️", label: "Equipo" },
 ];
 
 export default function NavTabs({ nombre }: { nombre: string }) {

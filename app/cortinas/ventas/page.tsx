@@ -64,7 +64,7 @@ export default function VentasPage() {
           return (
             <Link
               key={v.id}
-              href={`/ventas/${v.id}`}
+              href={`/cortinas/ventas/${v.id}`}
               className="block bg-[var(--warm-white)] rounded-2xl p-3.5 mb-3 border border-[var(--border)] shadow-sm"
             >
               <div className="flex justify-between items-start">

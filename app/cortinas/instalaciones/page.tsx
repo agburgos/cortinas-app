@@ -231,7 +231,7 @@ function VistaSemana({
               <div className="text-[12px] text-[var(--light)]">Sin instalaciones</div>
             ) : (
               items.map((v) => (
-                <Link key={v.id} href={`/ventas/${v.id}`} className="flex items-center justify-between py-1.5 border-t border-[var(--border)] first:border-t-0">
+                <Link key={v.id} href={`/cortinas/ventas/${v.id}`} className="flex items-center justify-between py-1.5 border-t border-[var(--border)] first:border-t-0">
                   <div>
                     <div className="text-[13px] font-semibold">{clienteNombre(v.cliente_id)}</div>
                     {instaladorNombre(v.instalador_id) && (
@@ -269,7 +269,7 @@ function VistaDia({
       {items.map((v) => (
         <Link
           key={v.id}
-          href={`/ventas/${v.id}`}
+          href={`/cortinas/ventas/${v.id}`}
           className="block bg-[var(--warm-white)] rounded-xl border border-[var(--border)] p-3.5 border-l-[4px] border-l-[var(--teal)]"
         >
           <div className="flex justify-between items-start">

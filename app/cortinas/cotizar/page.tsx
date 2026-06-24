@@ -202,7 +202,7 @@ export default function CotizarPage() {
     alert("✓ Cotización guardada, venta creada y PDF descargado");
     setGuardando(false);
     resetCotizador();
-    router.push("/");
+    router.push("/cortinas");
   }
 
   if (loading) return <p className="text-[var(--mid)] text-sm">Cargando...</p>;

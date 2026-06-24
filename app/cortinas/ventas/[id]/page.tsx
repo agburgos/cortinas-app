@@ -72,13 +72,13 @@ export default function VentaDetailPage() {
       })
       .eq("id", venta!.id);
     alert("✓ Venta actualizada");
-    router.push("/ventas");
+    router.push("/cortinas/ventas");
   }
 
   async function deleteVenta() {
     if (!confirm("¿Eliminar esta venta?")) return;
     await supabase.from("ventas").delete().eq("id", venta!.id);
-    router.push("/ventas");
+    router.push("/cortinas/ventas");
   }
 
   return (

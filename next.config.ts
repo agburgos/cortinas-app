@@ -14,7 +14,6 @@ const cloudStorageDir = path.join(os.homedir(), "Library", "CloudStorage");
 const turbopackRoot = fs.existsSync(cloudStorageDir) ? cloudStorageDir : undefined;
 
 const nextConfig: NextConfig = {
-  basePath: "/cortinas",
   ...(turbopackRoot ? { turbopack: { root: turbopackRoot } } : {}),
 };
 
