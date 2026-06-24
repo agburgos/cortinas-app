@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Cliente, Cotizacion, Instalador, Venta } from "@/lib/types";
-import { fmt, fmtDate } from "@/lib/format";
+import { fmt, fmtDate, fmtDateHora } from "@/lib/format";
 import { generarCotizacionPDF } from "@/lib/pdf";
 import { getConfiguracion } from "@/lib/configuracion";
 import { fetchLogoDataUrl } from "@/lib/logo";
@@ -110,7 +110,7 @@ export default function Dashboard() {
               <div>
                 <div className="text-[15px] font-semibold">{clienteNombre(v.cliente_id)}</div>
                 <div className="text-xs text-[var(--mid)] mt-0.5">
-                  📅 {fmtDate(v.fecha_instalacion!)}
+                  📅 {fmtDateHora(v.fecha_instalacion!)}
                   {instaladorNombre(v.instalador_id) ? ` · ${instaladorNombre(v.instalador_id)}` : ""}
                 </div>
               </div>

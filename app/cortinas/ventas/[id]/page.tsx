@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Cliente, EstadoPago, Instalador, Venta } from "@/lib/types";
-import { fmt, fmtDate } from "@/lib/format";
+import { fmt, fmtDateHora, ymdLocal } from "@/lib/format";
 import { Btn } from "@/components/ui";
 
 export default function VentaDetailPage() {
@@ -15,6 +15,7 @@ export default function VentaDetailPage() {
   const [instaladores, setInstaladores] = useState<Instalador[]>([]);
   const [loading, setLoading] = useState(true);
   const [fechaInst, setFechaInst] = useState("");
+  const [horaInst, setHoraInst] = useState("09:00");
   const [instaladorId, setInstaladorId] = useState("");
   const [costoInstalacion, setCostoInstalacion] = useState(0);
   const [montoPagado, setMontoPagado] = useState(0);
@@ -33,7 +34,13 @@ export default function VentaDetailPage() {
         return;
       }
       setVenta(v);
-      setFechaInst(v.fecha_instalacion || "");
+      if (v.fecha_instalacion) {
+        const d = new Date(v.fecha_instalacion);
+        setFechaInst(ymdLocal(d));
+        setHoraInst(`${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
+      } else {
+        setFechaInst("");
+      }
       setInstaladorId(v.instalador_id || "");
       setCostoInstalacion(v.costo_instalacion || 0);
       setMontoPagado(v.monto_pagado || 0);
@@ -60,10 +67,11 @@ export default function VentaDetailPage() {
   }
 
   async function updateVenta() {
+    const fechaInstalacion = fechaInst ? new Date(`${fechaInst}T${horaInst || "09:00"}:00`).toISOString() : null;
     await supabase
       .from("ventas")
       .update({
-        fecha_instalacion: fechaInst || null,
+        fecha_instalacion: fechaInstalacion,
         instalador_id: instaladorId || null,
         costo_instalacion: costoInstalacion,
         monto_pagado: montoPagado,
@@ -90,15 +98,21 @@ export default function VentaDetailPage() {
         <Row k="Cobrado" v={fmt(venta.monto_pagado || 0)} color="var(--green)" />
         <Row k="Por cobrar" v={fmt(restante)} color="var(--red)" />
         <Row k="Estado pago" v={venta.estado_pago} last={!venta.fecha_instalacion && !instaladorActual} />
-        {venta.fecha_instalacion && <Row k="Fecha inst." v={fmtDate(venta.fecha_instalacion)} />}
+        {venta.fecha_instalacion && <Row k="Fecha inst." v={fmtDateHora(venta.fecha_instalacion)} />}
         {instaladorActual && <Row k="Instalador" v={instaladorActual.nombre} />}
         {venta.costo_instalacion > 0 && <Row k="Costo instalación" v={fmt(venta.costo_instalacion)} color="var(--accent)" last />}
       </div>
 
       <div className="grid gap-3">
-        <div>
-          <label>Fecha instalación</label>
-          <input type="date" value={fechaInst} onChange={(e) => setFechaInst(e.target.value)} />
+        <div className="grid grid-cols-2 gap-2.5">
+          <div>
+            <label>Fecha instalación</label>
+            <input type="date" value={fechaInst} onChange={(e) => setFechaInst(e.target.value)} />
+          </div>
+          <div>
+            <label>Hora</label>
+            <input type="time" value={horaInst} onChange={(e) => setHoraInst(e.target.value)} disabled={!fechaInst} />
+          </div>
         </div>
         <div>
           <label>Instalador</label>

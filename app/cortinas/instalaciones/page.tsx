@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Cliente, Instalador, Venta } from "@/lib/types";
-import { fmt } from "@/lib/format";
+import { fmt, fmtHora } from "@/lib/format";
 import { Btn, Empty } from "@/components/ui";
 
 type Vista = "mes" | "semana" | "dia";
@@ -52,12 +52,15 @@ export default function InstalacionesPage() {
 
   const porFecha = useMemo(() => {
     const map = new Map<string, Venta[]>();
-    ventas.forEach((v) => {
-      if (!v.fecha_instalacion) return;
-      const key = v.fecha_instalacion;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(v);
-    });
+    ventas
+      .slice()
+      .sort((a, b) => new Date(a.fecha_instalacion!).getTime() - new Date(b.fecha_instalacion!).getTime())
+      .forEach((v) => {
+        if (!v.fecha_instalacion) return;
+        const key = ymd(new Date(v.fecha_instalacion));
+        if (!map.has(key)) map.set(key, []);
+        map.get(key)!.push(v);
+      });
     return map;
   }, [ventas]);
 
@@ -185,7 +188,11 @@ function VistaMes({
               </span>
               <div className="flex-1 flex flex-wrap gap-0.5 mt-0.5 items-end">
                 {items.slice(0, 3).map((v) => (
-                  <span key={v.id} className="w-1.5 h-1.5 rounded-full bg-[var(--teal)]" title={clienteNombre(v.cliente_id)} />
+                  <span
+                    key={v.id}
+                    className="w-1.5 h-1.5 rounded-full bg-[var(--teal)]"
+                    title={`${fmtHora(v.fecha_instalacion!)} · ${clienteNombre(v.cliente_id)}`}
+                  />
                 ))}
               </div>
             </button>
@@ -232,11 +239,16 @@ function VistaSemana({
             ) : (
               items.map((v) => (
                 <Link key={v.id} href={`/cortinas/ventas/${v.id}`} className="flex items-center justify-between py-1.5 border-t border-[var(--border)] first:border-t-0">
-                  <div>
-                    <div className="text-[13px] font-semibold">{clienteNombre(v.cliente_id)}</div>
-                    {instaladorNombre(v.instalador_id) && (
-                      <div className="text-[11px] text-[var(--mid)]">{instaladorNombre(v.instalador_id)}</div>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <div className="text-[12px] font-bold text-[var(--teal)] bg-[var(--teal-bg)] rounded-full px-2 py-0.5">
+                      {fmtHora(v.fecha_instalacion!)}
+                    </div>
+                    <div>
+                      <div className="text-[13px] font-semibold">{clienteNombre(v.cliente_id)}</div>
+                      {instaladorNombre(v.instalador_id) && (
+                        <div className="text-[11px] text-[var(--mid)]">{instaladorNombre(v.instalador_id)}</div>
+                      )}
+                    </div>
                   </div>
                   <div className="text-[13px] font-bold text-[var(--accent)]">{fmt(v.total)}</div>
                 </Link>
@@ -274,6 +286,9 @@ function VistaDia({
         >
           <div className="flex justify-between items-start">
             <div>
+              <div className="text-[12px] font-bold text-[var(--teal)] bg-[var(--teal-bg)] rounded-full px-2 py-0.5 inline-block mb-1">
+                🕐 {fmtHora(v.fecha_instalacion!)}
+              </div>
               <div className="text-[15px] font-bold">{clienteNombre(v.cliente_id)}</div>
               {instaladorNombre(v.instalador_id) && (
                 <div className="text-[12px] text-[var(--mid)] mt-0.5">🛠️ {instaladorNombre(v.instalador_id)}</div>
