@@ -26,6 +26,7 @@ export default function CotizacionDetallePage() {
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [convirtiendo, setConvirtiendo] = useState(false);
+  const [duplicando, setDuplicando] = useState(false);
 
   const [productoId, setProductoId] = useState("");
   const [ancho, setAncho] = useState("");
@@ -64,6 +65,7 @@ export default function CotizacionDetallePage() {
   const total = items.reduce((a, it) => a + it.subtotal, 0);
   const costoTotal = items.reduce((a, it) => a + it.costoSubtotal, 0);
   const esWeb = cot.estado === ESTADO_SOLICITUD_WEB;
+  const esVenta = !!ventaId;
 
   function addItem() {
     if (!producto) return alert("Selecciona un producto");
@@ -151,6 +153,28 @@ export default function CotizacionDetallePage() {
     });
   }
 
+  async function crearNuevaVersion() {
+    setDuplicando(true);
+    const { data: nueva, error } = await supabase
+      .from("cotizaciones")
+      .insert({
+        cliente_id: cot.cliente_id,
+        items,
+        total,
+        notas,
+        texto_ia: "",
+        estado: "Borrador",
+      })
+      .select()
+      .single();
+    setDuplicando(false);
+    if (error || !nueva) {
+      alert("✗ No se pudo crear la nueva cotización: " + (error?.message || ""));
+      return;
+    }
+    router.push(`/cortinas/cotizaciones/${nueva.id}`);
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-1">
@@ -180,6 +204,9 @@ export default function CotizacionDetallePage() {
               Ver venta →
             </Link>
           </div>
+          <p className="text-[11px] text-[var(--mid)] mt-1.5">
+            Esta cotización ya no se puede modificar. Si necesitas más productos o servicios, crea una nueva cotización.
+          </p>
         </Card>
       )}
 
@@ -192,7 +219,9 @@ export default function CotizacionDetallePage() {
             </div>
             <div className="flex items-center gap-2">
               <div className="text-sm font-bold">{fmt(it.subtotal)}</div>
-              <button className="text-[var(--red)] text-lg" onClick={() => removeItem(i)}>×</button>
+              {!esVenta && (
+                <button className="text-[var(--red)] text-lg" onClick={() => removeItem(i)}>×</button>
+              )}
             </div>
           </div>
         ))}
@@ -206,57 +235,68 @@ export default function CotizacionDetallePage() {
         </div>
       </Card>
 
-      <Card title="Agregar item">
-        <div className="mb-3.5">
-          <label>Producto</label>
-          <select value={productoId} onChange={(e) => setProductoId(e.target.value)}>
-            <option value="">Seleccionar...</option>
-            {productos.map((p) => (
-              <option key={p.id} value={p.id}>
-                [{tipoLabel(p.tipo)}] {p.nombre} — {p.precio_m2 > 0 ? `${fmt(p.precio_m2)}/m²` : `${fmt(p.precio_unidad)}/u`}
-              </option>
-            ))}
-          </select>
-        </div>
-        {producto && esM2 && (
-          <>
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="mb-3.5">
-                <label>Ancho (m)</label>
-                <input type="number" step="0.01" value={ancho} onChange={(e) => setAncho(e.target.value)} placeholder="1.20" />
-              </div>
-              <div className="mb-3.5">
-                <label>Alto (m)</label>
-                <input type="number" step="0.01" value={alto} onChange={(e) => setAlto(e.target.value)} placeholder="2.00" />
-              </div>
-            </div>
+      {!esVenta && (
+        <>
+          <Card title="Agregar item">
             <div className="mb-3.5">
-              <label>Cantidad</label>
-              <input type="number" min={1} value={cantidad} onChange={(e) => setCantidad(e.target.value)} />
+              <label>Producto</label>
+              <select value={productoId} onChange={(e) => setProductoId(e.target.value)}>
+                <option value="">Seleccionar...</option>
+                {productos.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    [{tipoLabel(p.tipo)}] {p.nombre} — {p.precio_m2 > 0 ? `${fmt(p.precio_m2)}/m²` : `${fmt(p.precio_unidad)}/u`}
+                  </option>
+                ))}
+              </select>
             </div>
-          </>
-        )}
-        {producto && !esM2 && (
-          <div className="mb-3.5">
-            <label>Cantidad</label>
-            <input type="number" min={1} value={cantidadFixed} onChange={(e) => setCantidadFixed(e.target.value)} />
-          </div>
-        )}
-        <Btn variant="secondary" onClick={addItem}>+ Agregar item</Btn>
-      </Card>
+            {producto && esM2 && (
+              <>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="mb-3.5">
+                    <label>Ancho (m)</label>
+                    <input type="number" step="0.01" value={ancho} onChange={(e) => setAncho(e.target.value)} placeholder="1.20" />
+                  </div>
+                  <div className="mb-3.5">
+                    <label>Alto (m)</label>
+                    <input type="number" step="0.01" value={alto} onChange={(e) => setAlto(e.target.value)} placeholder="2.00" />
+                  </div>
+                </div>
+                <div className="mb-3.5">
+                  <label>Cantidad</label>
+                  <input type="number" min={1} value={cantidad} onChange={(e) => setCantidad(e.target.value)} />
+                </div>
+              </>
+            )}
+            {producto && !esM2 && (
+              <div className="mb-3.5">
+                <label>Cantidad</label>
+                <input type="number" min={1} value={cantidadFixed} onChange={(e) => setCantidadFixed(e.target.value)} />
+              </div>
+            )}
+            <Btn variant="secondary" onClick={addItem}>+ Agregar item</Btn>
+          </Card>
 
-      <Card title="Notas">
-        <textarea value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Observaciones, condiciones, plazos..." />
-      </Card>
+          <Card title="Notas">
+            <textarea value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Observaciones, condiciones, plazos..." />
+          </Card>
+        </>
+      )}
 
       <Btn variant="ghost" onClick={descargarPDF} className="mb-2.5">Descargar PDF</Btn>
-      <Btn variant="secondary" onClick={guardar} disabled={guardando} className="mb-2.5">
-        {guardando ? "Guardando..." : "Guardar cambios"}
-      </Btn>
-      {!ventaId && (
-        <Btn variant="primary" onClick={convertirEnVenta} disabled={convirtiendo}>
-          {convirtiendo ? "Convirtiendo..." : "Convertir en venta"}
+
+      {esVenta ? (
+        <Btn variant="secondary" onClick={crearNuevaVersion} disabled={duplicando}>
+          {duplicando ? "Creando..." : "Crear nueva cotización a partir de esta"}
         </Btn>
+      ) : (
+        <>
+          <Btn variant="secondary" onClick={guardar} disabled={guardando} className="mb-2.5">
+            {guardando ? "Guardando..." : "Guardar cambios"}
+          </Btn>
+          <Btn variant="primary" onClick={convertirEnVenta} disabled={convirtiendo}>
+            {convirtiendo ? "Convirtiendo..." : "Convertir en venta"}
+          </Btn>
+        </>
       )}
     </div>
   );
