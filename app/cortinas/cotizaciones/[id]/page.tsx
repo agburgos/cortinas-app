@@ -27,6 +27,7 @@ export default function CotizacionDetallePage() {
   const [guardando, setGuardando] = useState(false);
   const [convirtiendo, setConvirtiendo] = useState(false);
   const [duplicando, setDuplicando] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
 
   const [productoId, setProductoId] = useState("");
   const [ancho, setAncho] = useState("");
@@ -175,6 +176,18 @@ export default function CotizacionDetallePage() {
     router.push(`/cortinas/cotizaciones/${nueva.id}`);
   }
 
+  async function eliminarBorrador() {
+    if (!confirm("¿Eliminar esta cotización? Esta acción no se puede deshacer.")) return;
+    setEliminando(true);
+    const { error } = await supabase.from("cotizaciones").delete().eq("id", id);
+    setEliminando(false);
+    if (error) {
+      alert("✗ No se pudo eliminar: " + error.message);
+      return;
+    }
+    router.push("/cortinas/cotizaciones");
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-1">
@@ -293,8 +306,11 @@ export default function CotizacionDetallePage() {
           <Btn variant="secondary" onClick={guardar} disabled={guardando} className="mb-2.5">
             {guardando ? "Guardando..." : "Guardar cambios"}
           </Btn>
-          <Btn variant="primary" onClick={convertirEnVenta} disabled={convirtiendo}>
+          <Btn variant="primary" onClick={convertirEnVenta} disabled={convirtiendo} className="mb-2.5">
             {convirtiendo ? "Convirtiendo..." : "Convertir en venta"}
+          </Btn>
+          <Btn variant="danger" onClick={eliminarBorrador} disabled={eliminando}>
+            {eliminando ? "Eliminando..." : "Eliminar borrador"}
           </Btn>
         </>
       )}

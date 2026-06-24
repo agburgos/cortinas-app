@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Configuracion } from "@/lib/types";
+import { Configuracion, Usuario } from "@/lib/types";
 import { applyTheme } from "@/lib/theme";
-import { Card, Btn } from "@/components/ui";
+import { fmtDate } from "@/lib/format";
+import { Card, Btn, Badge } from "@/components/ui";
 
 const FORM_VACIO = {
   empresa_nombre: "",
@@ -24,6 +25,7 @@ export default function ConfiguracionPage() {
   const [subiendoWeb, setSubiendoWeb] = useState(false);
   const [subiendoPdf, setSubiendoPdf] = useState(false);
 
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [nuevoUsuario, setNuevoUsuario] = useState({ nombre: "", email: "", password: "" });
   const [creandoUsuario, setCreandoUsuario] = useState(false);
   const [mensajeUsuario, setMensajeUsuario] = useState<string | null>(null);
@@ -33,7 +35,10 @@ export default function ConfiguracionPage() {
   }, []);
 
   async function load() {
-    const { data } = await supabase.from("configuracion").select("*").eq("id", 1).maybeSingle<Configuracion>();
+    const [{ data }, { data: u }] = await Promise.all([
+      supabase.from("configuracion").select("*").eq("id", 1).maybeSingle<Configuracion>(),
+      supabase.from("usuarios").select("*").order("created_at", { ascending: true }),
+    ]);
     if (data) {
       setForm({
         empresa_nombre: data.empresa_nombre,
@@ -46,6 +51,7 @@ export default function ConfiguracionPage() {
       setLogoWebUrl(data.logo_web_url);
       setLogoPdfUrl(data.logo_pdf_url);
     }
+    setUsuarios(u ?? []);
     setLoading(false);
   }
 
@@ -115,6 +121,7 @@ export default function ConfiguracionPage() {
       if (!res.ok) throw new Error(data.error || "Error");
       setMensajeUsuario("✓ Usuario creado correctamente");
       setNuevoUsuario({ nombre: "", email: "", password: "" });
+      load();
     } catch (e) {
       setMensajeUsuario(e instanceof Error ? e.message : "Error al crear usuario");
     } finally {
@@ -205,6 +212,24 @@ export default function ConfiguracionPage() {
       </Btn>
 
       <div className="h-5" />
+
+      <Card title="Usuarios del sistema">
+        {!usuarios.length ? (
+          <p className="text-sm text-[var(--mid)]">Sin usuarios registrados</p>
+        ) : (
+          usuarios.map((u) => (
+            <div key={u.id} className="flex items-center justify-between py-2.5 border-b border-[var(--border)] last:border-b-0">
+              <div>
+                <div className="text-[14px] font-semibold">{u.nombre || u.email}</div>
+                <div className="text-[11px] text-[var(--mid)] mt-0.5">
+                  {u.email} · desde {fmtDate(u.created_at)}
+                </div>
+              </div>
+              <Badge color="teal">{u.rol}</Badge>
+            </div>
+          ))
+        )}
+      </Card>
 
       <Card title="Crear usuario">
         <div className="mb-3.5">

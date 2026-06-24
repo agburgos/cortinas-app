@@ -32,6 +32,15 @@ export default function CotizacionesPage() {
 
   const clienteNombre = (id: string | null) => clientes.find((c) => c.id === id)?.nombre ?? "Sin cliente";
 
+  async function eliminar(e: React.MouseEvent, id: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm("¿Eliminar esta cotización? Esta acción no se puede deshacer.")) return;
+    const { error } = await supabase.from("cotizaciones").delete().eq("id", id);
+    if (error) return alert("✗ No se pudo eliminar: " + error.message);
+    setCotizaciones((prev) => prev.filter((c) => c.id !== id));
+  }
+
   return (
     <div>
       <div className="text-xl font-extrabold tracking-tight mb-4">Cotizaciones</div>
@@ -61,7 +70,14 @@ export default function CotizacionesPage() {
                     {!esWeb && !tieneVenta && <Badge>{c.estado}</Badge>}
                   </div>
                 </div>
-                <div className="text-lg font-extrabold text-[var(--accent)]">{fmt(c.total)}</div>
+                <div className="text-right">
+                  <div className="text-lg font-extrabold text-[var(--accent)]">{fmt(c.total)}</div>
+                  {!tieneVenta && (
+                    <button onClick={(e) => eliminar(e, c.id)} className="text-[11px] text-[var(--light)] mt-1">
+                      eliminar
+                    </button>
+                  )}
+                </div>
               </div>
             </Link>
           );
