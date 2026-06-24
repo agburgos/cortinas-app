@@ -12,6 +12,8 @@ const TABS = [
   { href: "/cortinas/clientes", icon: "👤", label: "Clientes" },
   { href: "/cortinas/productos", icon: "🪟", label: "Productos" },
   { href: "/cortinas/instaladores", icon: "🛠️", label: "Equipo" },
+  { href: "/cortinas/reportes", icon: "📈", label: "Reportes" },
+  { href: "/cortinas/configuracion", icon: "⚙️", label: "Config" },
 ];
 
 export default function NavTabs({ nombre }: { nombre: string }) {

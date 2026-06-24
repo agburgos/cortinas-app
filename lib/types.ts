@@ -1,4 +1,4 @@
-export type TipoProducto = 'roller' | 'screener' | 'cortina' | 'instalacion' | 'accesorio';
+export type TipoProducto = 'roller' | 'sunscreen' | 'cortina' | 'instalacion' | 'accesorio';
 
 export interface Cliente {
   id: string;
@@ -82,9 +82,22 @@ export interface Venta {
   fecha: string;
 }
 
+export interface Configuracion {
+  id: number;
+  empresa_nombre: string;
+  logo_web_url: string | null;
+  logo_pdf_url: string | null;
+  color_accent: string;
+  color_gold: string;
+  color_teal: string;
+  pdf_condiciones: string;
+  pdf_pie: string | null;
+  updated_at: string;
+}
+
 export const TIPO_LABEL: Record<TipoProducto, string> = {
   roller: 'Roller',
-  screener: 'Screener',
+  sunscreen: 'Sunscreen',
   cortina: 'Cortina tela',
   instalacion: 'Instalación',
   accesorio: 'Accesorio',

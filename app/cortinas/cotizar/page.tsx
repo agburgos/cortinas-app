@@ -6,6 +6,8 @@ import { supabase } from "@/lib/supabase";
 import { Cliente, CotizacionItem, Producto, TIPO_LABEL } from "@/lib/types";
 import { fmt } from "@/lib/format";
 import { generarCotizacionPDF } from "@/lib/pdf";
+import { getConfiguracion } from "@/lib/configuracion";
+import { fetchLogoDataUrl } from "@/lib/logo";
 import { Card, Btn } from "@/components/ui";
 
 export default function CotizarPage() {
@@ -190,6 +192,8 @@ export default function CotizarPage() {
       notas,
     });
     if (cotiz) {
+      const config = await getConfiguracion();
+      const logoDataUrl = await fetchLogoDataUrl(config?.logo_pdf_url);
       generarCotizacionPDF({
         numero: cotiz.numero,
         fecha: cotiz.fecha,
@@ -197,6 +201,8 @@ export default function CotizarPage() {
         items,
         total,
         notas,
+        config,
+        logoDataUrl,
       });
     }
     alert("✓ Cotización guardada, venta creada y PDF descargado");

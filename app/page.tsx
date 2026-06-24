@@ -21,7 +21,7 @@ export default function LandingPage() {
 
       <header className="px-5 py-10 text-center max-w-2xl mx-auto">
         <h1 className="text-3xl font-extrabold tracking-tight text-[var(--charcoal)]">
-          Cortinas, rollers y screeners a medida
+          Cortinas, rollers y sunscreens a medida
         </h1>
         <p className="text-[var(--mid)] mt-3 text-[15px]">
           Cotiza online en segundos: elige tu producto, ingresa las medidas y recibe tu presupuesto en PDF directo a tu correo.

@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { TIPO_LABEL, TipoProducto } from "@/lib/types";
 import { fmt } from "@/lib/format";
 import { Card, Btn } from "@/components/ui";
+import TerminosModal from "@/components/TerminosModal";
 
 interface ProductoPublico {
   id: string;
@@ -42,6 +43,8 @@ export default function PublicQuoteForm() {
   const [notas, setNotas] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<"ok" | "error" | null>(null);
+  const [aceptaTerminos, setAceptaTerminos] = useState(false);
+  const [mostrarTerminos, setMostrarTerminos] = useState(false);
 
   useEffect(() => {
     supabase.rpc("productos_publicos").then(({ data }) => {
@@ -104,6 +107,7 @@ export default function PublicQuoteForm() {
   async function enviarSolicitud() {
     if (!nombre.trim() || !email.trim()) return alert("Completa tu nombre y email");
     if (!items.length) return alert("Agrega al menos un producto");
+    if (!aceptaTerminos) return alert("Debes aceptar los Términos y Condiciones para continuar");
     setEnviando(true);
     setResultado(null);
     try {
@@ -115,6 +119,7 @@ export default function PublicQuoteForm() {
           email,
           telefono,
           notas,
+          aceptaTerminos,
           items: items.map((it) => ({
             productoId: it.productoId,
             ancho: it.ancho,
@@ -131,6 +136,7 @@ export default function PublicQuoteForm() {
       setEmail("");
       setTelefono("");
       setNotas("");
+      setAceptaTerminos(false);
     } catch {
       setResultado("error");
     } finally {
@@ -240,12 +246,32 @@ export default function PublicQuoteForm() {
             {resultado === "error" && (
               <p className="text-[var(--red)] text-sm mb-3">Hubo un error al enviar. Intenta de nuevo.</p>
             )}
-            <Btn variant="primary" onClick={enviarSolicitud} disabled={enviando}>
+            <label className="flex items-start gap-2 mb-3.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={aceptaTerminos}
+                onChange={(e) => setAceptaTerminos(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-[var(--accent)]"
+              />
+              <span className="text-[12.5px] text-[var(--charcoal)] leading-snug">
+                Acepto los{" "}
+                <button
+                  type="button"
+                  onClick={() => setMostrarTerminos(true)}
+                  className="text-[var(--accent)] font-semibold underline"
+                >
+                  Términos y Condiciones y la Política de Protección de Datos
+                </button>
+              </span>
+            </label>
+            <Btn variant="primary" onClick={enviarSolicitud} disabled={enviando || !aceptaTerminos}>
               {enviando ? "Enviando..." : "Enviar y recibir PDF por correo"}
             </Btn>
           </Card>
         </>
       )}
+
+      {mostrarTerminos && <TerminosModal onClose={() => setMostrarTerminos(false)} />}
     </div>
   );
 }

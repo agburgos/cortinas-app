@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { construirCotizacionPDF, nombreArchivoCotizacion } from "@/lib/pdf";
+import { fetchLogoDataUrl } from "@/lib/logo";
 import { CotizacionItem, Producto } from "@/lib/types";
 import { fmt } from "@/lib/format";
 
@@ -17,16 +18,20 @@ interface ItemInput {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { nombre, email, telefono, notas, items } = body as {
+  const { nombre, email, telefono, notas, items, aceptaTerminos } = body as {
     nombre: string;
     email: string;
     telefono?: string;
     notas?: string;
     items: ItemInput[];
+    aceptaTerminos?: boolean;
   };
 
   if (!nombre?.trim() || !email?.trim() || !items?.length) {
     return NextResponse.json({ error: "Faltan datos obligatorios" }, { status: 400 });
+  }
+  if (!aceptaTerminos) {
+    return NextResponse.json({ error: "Debes aceptar los Términos y Condiciones" }, { status: 400 });
   }
 
   const admin = getSupabaseAdmin();
@@ -121,6 +126,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No se pudo guardar la cotización" }, { status: 500 });
   }
 
+  const { data: config } = await admin.from("configuracion").select("*").eq("id", 1).maybeSingle();
+  const logoDataUrl = await fetchLogoDataUrl(config?.logo_pdf_url);
+
   const doc = construirCotizacionPDF({
     numero: cotiz.numero,
     fecha: cotiz.fecha,
@@ -128,9 +136,11 @@ export async function POST(req: NextRequest) {
     items: itemsCalculados,
     total,
     notas: notas || "",
+    config,
+    logoDataUrl,
   });
   const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
-  const filename = nombreArchivoCotizacion(cotiz.numero);
+  const filename = nombreArchivoCotizacion(cotiz.numero, config?.empresa_nombre);
 
   const resendKey = process.env.RESEND_API_KEY;
   if (resendKey) {

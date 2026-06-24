@@ -1,11 +1,11 @@
 import jsPDF from "jspdf";
-import { Cliente, CotizacionItem, EMPRESA_NOMBRE } from "./types";
+import { Cliente, CotizacionItem, Configuracion, EMPRESA_NOMBRE } from "./types";
 import { fmt, fmtDate } from "./format";
+import { hexToRgb } from "./configuracion";
 
-const ACCENT: [number, number, number] = [193, 69, 42];
-const GOLD: [number, number, number] = [200, 147, 42];
 const CHARCOAL: [number, number, number] = [42, 29, 20];
 const MID: [number, number, number] = [122, 106, 92];
+const CONDICIONES_DEFAULT = "Cotización válida por 15 días. Condiciones sugeridas: 50% anticipo, 50% contra instalación.";
 
 export function construirCotizacionPDF(params: {
   numero: number;
@@ -14,8 +14,16 @@ export function construirCotizacionPDF(params: {
   items: CotizacionItem[];
   total: number;
   notas: string;
+  config?: Configuracion | null;
+  logoDataUrl?: string | null;
 }): jsPDF {
-  const { numero, fecha, cliente, items, total, notas } = params;
+  const { numero, fecha, cliente, items, total, notas, config, logoDataUrl } = params;
+  const ACCENT = hexToRgb(config?.color_accent || "#C1452A");
+  const GOLD = hexToRgb(config?.color_gold || "#C8932A");
+  const empresaNombre = config?.empresa_nombre || EMPRESA_NOMBRE;
+  const [nombreLinea1, ...resto] = empresaNombre.split(" ");
+  const nombreLinea2 = resto.join(" ");
+
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 48;
@@ -23,13 +31,21 @@ export function construirCotizacionPDF(params: {
 
   doc.setFillColor(...ACCENT);
   doc.rect(0, 0, pageWidth, 90, "F");
+  if (logoDataUrl) {
+    try {
+      doc.addImage(logoDataUrl, margin, 18, 54, 54);
+    } catch {
+      // si el logo no se puede decodificar, se omite sin interrumpir el PDF
+    }
+  }
+  const textX = logoDataUrl ? margin + 64 : margin;
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
-  doc.text("Cortinajes", margin, 42);
+  doc.text(nombreLinea1, textX, 42);
   doc.setFontSize(13);
   doc.setFont("helvetica", "normal");
-  doc.text("Claudia Burgos", margin, 62);
+  if (nombreLinea2) doc.text(nombreLinea2, textX, 62);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
@@ -130,17 +146,20 @@ export function construirCotizacionPDF(params: {
   doc.setFont("helvetica", "italic");
   doc.setFontSize(9.5);
   doc.setTextColor(...MID);
-  doc.text(
-    "Cotización válida por 15 días. Condiciones sugeridas: 50% anticipo, 50% contra instalación.",
-    margin,
-    Math.min(y, 770)
-  );
+  const condicionesLines = doc.splitTextToSize(config?.pdf_condiciones || CONDICIONES_DEFAULT, pageWidth - margin * 2);
+  doc.text(condicionesLines, margin, Math.min(y, 760));
+
+  if (config?.pdf_pie) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.text(config.pdf_pie, margin, Math.min(y + condicionesLines.length * 12 + 10, 786));
+  }
 
   return doc;
 }
 
-export function nombreArchivoCotizacion(numero: number): string {
-  return `Cotizacion-${EMPRESA_NOMBRE.replace(/\s+/g, "")}-${String(numero).padStart(4, "0")}.pdf`;
+export function nombreArchivoCotizacion(numero: number, empresaNombre?: string): string {
+  return `Cotizacion-${(empresaNombre || EMPRESA_NOMBRE).replace(/\s+/g, "")}-${String(numero).padStart(4, "0")}.pdf`;
 }
 
 export function generarCotizacionPDF(params: {
@@ -150,7 +169,9 @@ export function generarCotizacionPDF(params: {
   items: CotizacionItem[];
   total: number;
   notas: string;
+  config?: Configuracion | null;
+  logoDataUrl?: string | null;
 }) {
   const doc = construirCotizacionPDF(params);
-  doc.save(nombreArchivoCotizacion(params.numero));
+  doc.save(nombreArchivoCotizacion(params.numero, params.config?.empresa_nombre));
 }

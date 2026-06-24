@@ -25,7 +25,7 @@ create table if not exists instaladores (
 create table if not exists productos (
   id uuid primary key default gen_random_uuid(),
   nombre text not null,
-  tipo text not null check (tipo in ('roller','screener','cortina','instalacion','accesorio')),
+  tipo text not null check (tipo in ('roller','sunscreen','cortina','instalacion','accesorio')),
   marca text,
   precio_m2 numeric not null default 0,
   precio_unidad numeric not null default 0,

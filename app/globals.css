@@ -7,12 +7,12 @@
   --mid: #7A6A5C;
   --light: #C9B8A6;
   --accent: #C1452A;
-  --accent-light: #E07A52;
-  --accent-bg: #FBE2D6;
+  --accent-light: color-mix(in srgb, var(--accent) 70%, white);
+  --accent-bg: color-mix(in srgb, var(--accent) 14%, white);
   --gold: #C8932A;
-  --gold-bg: #F8E8C4;
+  --gold-bg: color-mix(in srgb, var(--gold) 22%, white);
   --teal: #1F7A6C;
-  --teal-bg: #D7F0EA;
+  --teal-bg: color-mix(in srgb, var(--teal) 16%, white);
   --green: #1E7A4B;
   --green-bg: #D7F3E1;
   --red: #C23B2B;
@@ -20,7 +20,7 @@
   --yellow: #9A6B0C;
   --yellow-bg: #FBEAC4;
   --border: #ECDCC8;
-  --gradient: linear-gradient(135deg, #C1452A 0%, #D9762F 55%, #C8932A 100%);
+  --gradient: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 50%, var(--gold)) 55%, var(--gold) 100%);
 }
 
 body {

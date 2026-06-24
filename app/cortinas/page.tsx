@@ -6,6 +6,8 @@ import { supabase } from "@/lib/supabase";
 import { Cliente, Cotizacion, Instalador, Venta } from "@/lib/types";
 import { fmt, fmtDate } from "@/lib/format";
 import { generarCotizacionPDF } from "@/lib/pdf";
+import { getConfiguracion } from "@/lib/configuracion";
+import { fetchLogoDataUrl } from "@/lib/logo";
 import { Card, Empty, Badge, Btn } from "@/components/ui";
 
 export default function Dashboard() {
@@ -59,9 +61,11 @@ export default function Dashboard() {
   const clienteNombre = (id: string | null) => clientes.find((c) => c.id === id)?.nombre ?? "Cliente";
   const instaladorNombre = (id: string | null) => instaladores.find((i) => i.id === id)?.nombre ?? "";
 
-  function descargarPDF(c: Cotizacion) {
+  async function descargarPDF(c: Cotizacion) {
     const cliente = clientes.find((cl) => cl.id === c.cliente_id) ?? null;
-    generarCotizacionPDF({ numero: c.numero, fecha: c.fecha, cliente, items: c.items, total: c.total, notas: c.notas || "" });
+    const config = await getConfiguracion();
+    const logoDataUrl = await fetchLogoDataUrl(config?.logo_pdf_url);
+    generarCotizacionPDF({ numero: c.numero, fecha: c.fecha, cliente, items: c.items, total: c.total, notas: c.notas || "", config, logoDataUrl });
   }
 
   return (
