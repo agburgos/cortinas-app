@@ -130,12 +130,22 @@ export default function ConfiguracionPage() {
 
   async function enviarReset(email: string) {
     setEnviandoReset(email);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/restablecer-password`,
-    });
-    setEnviandoReset(null);
-    if (error) return alert("✗ No se pudo enviar: " + error.message);
-    alert(`✓ Enlace de restablecimiento enviado a ${email}`);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/restablecer-password`,
+      });
+      setEnviandoReset(null);
+      if (error) {
+        console.error("Error enviando reset:", error);
+        alert(`✗ No se pudo enviar (status ${error.status ?? "?"}, ${error.name ?? "?"}): ${error.message || "sin detalle, revisa la consola"}`);
+        return;
+      }
+      alert(`✓ Enlace de restablecimiento enviado a ${email}`);
+    } catch (e) {
+      setEnviandoReset(null);
+      console.error("Excepción enviando reset:", e);
+      alert("✗ Error de red al enviar: " + (e instanceof Error ? e.message : JSON.stringify(e)));
+    }
   }
 
   async function crearUsuario() {

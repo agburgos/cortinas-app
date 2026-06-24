@@ -25,15 +25,22 @@ export default function LoginForm() {
     setError("");
     setMensaje("");
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/restablecer-password`,
-    });
-    setLoading(false);
-    if (error) {
-      setError(error.message);
-      return;
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/restablecer-password`,
+      });
+      setLoading(false);
+      if (error) {
+        console.error("Error enviando reset:", error);
+        setError(error.message || `Error (status ${error.status ?? "?"}). Revisa la consola.`);
+        return;
+      }
+      setMensaje("Si ese correo está registrado, te enviamos un enlace para restablecer tu contraseña.");
+    } catch (e) {
+      setLoading(false);
+      console.error("Excepción enviando reset:", e);
+      setError("Error de red. Intenta de nuevo.");
     }
-    setMensaje("Si ese correo está registrado, te enviamos un enlace para restablecer tu contraseña.");
   }
 
   return (
