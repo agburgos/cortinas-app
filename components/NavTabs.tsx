@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 const TABS = [
   { href: "/", icon: "📊", label: "Inicio" },
@@ -13,7 +14,7 @@ const TABS = [
   { href: "/instaladores", icon: "🛠️", label: "Equipo" },
 ];
 
-export default function NavTabs() {
+export default function NavTabs({ nombre }: { nombre: string }) {
   const pathname = usePathname();
   const today = new Date().toLocaleDateString("es-CL", { day: "numeric", month: "short" });
 
@@ -29,7 +30,17 @@ export default function NavTabs() {
               Claudia Burgos
             </div>
           </div>
-          <div className="text-xs font-medium text-white/85 bg-white/15 rounded-full px-2.5 py-1">{today}</div>
+          <div className="flex items-center gap-2">
+            <div className="text-xs font-medium text-white/85 bg-white/15 rounded-full px-2.5 py-1 max-w-[90px] truncate">
+              {nombre || today}
+            </div>
+            <button
+              onClick={() => supabase.auth.signOut()}
+              className="text-xs font-semibold text-white/85 bg-white/15 rounded-full px-2.5 py-1"
+            >
+              Salir
+            </button>
+          </div>
         </div>
       </nav>
       <div className="flex bg-[var(--warm-white)] border-b border-[var(--border)] overflow-x-auto sticky top-[64px] z-40 shadow-sm">

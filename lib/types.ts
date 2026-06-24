@@ -9,6 +9,14 @@ export interface Cliente {
   created_at: string;
 }
 
+export interface Usuario {
+  id: string;
+  email: string;
+  nombre: string | null;
+  rol: string;
+  created_at: string;
+}
+
 export interface Instalador {
   id: string;
   nombre: string;
