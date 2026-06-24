@@ -17,14 +17,16 @@ import { supabase } from "@/lib/supabase";
 import { Cotizacion, TIPO_LABEL, TipoProducto, Venta } from "@/lib/types";
 import { fmt } from "@/lib/format";
 import { Card, Empty } from "@/components/ui";
+import DateRangeFilter from "@/components/DateRangeFilter";
+import { fechaEnRango, mesesEntre, rangoUltimosMeses, RangoFechas } from "@/lib/dateRange";
 
 const COLORES = ["#C1452A", "#C8932A", "#1F7A6C", "#7A6A5C", "#9A6B0C"];
-const MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
 export default function ReportesPage() {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rango, setRango] = useState<RangoFechas>(rangoUltimosMeses(6));
 
   useEffect(() => {
     (async () => {
@@ -52,16 +54,16 @@ export default function ReportesPage() {
     return costoItems + (v.costo_instalacion || 0);
   }
 
-  // Últimos 6 meses
-  const hoy = new Date();
-  const meses: { key: string; label: string; year: number; month: number }[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
-    meses.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: MESES_CORTOS[d.getMonth()], year: d.getFullYear(), month: d.getMonth() });
-  }
+  const sinFiltro = !rango.desde && !rango.hasta;
+  const ventasFiltradas = sinFiltro ? ventas : ventas.filter((v) => fechaEnRango(v.fecha, rango));
+  const cotizacionesFiltradas = sinFiltro ? cotizaciones : cotizaciones.filter((c) => fechaEnRango(c.fecha, rango));
+
+  const desdeMeses = rango.desde || ventasFiltradas[0]?.fecha.slice(0, 10) || ventas[0].fecha.slice(0, 10);
+  const hastaMeses = rango.hasta || new Date().toISOString().slice(0, 10);
+  const meses = mesesEntre(desdeMeses, hastaMeses);
 
   const porMes = meses.map((m) => {
-    const ventasMes = ventas.filter((v) => {
+    const ventasMes = ventasFiltradas.filter((v) => {
       const d = new Date(v.fecha);
       return d.getFullYear() === m.year && d.getMonth() === m.month;
     });
@@ -70,13 +72,13 @@ export default function ReportesPage() {
     return { mes: m.label, Ingreso: ingreso, Costo: costo, Ganancia: ingreso - costo };
   });
 
-  const totalIngreso = ventas.reduce((a, v) => a + (v.total || 0), 0);
-  const totalCosto = ventas.reduce((a, v) => a + costoDeVenta(v), 0);
+  const totalIngreso = ventasFiltradas.reduce((a, v) => a + (v.total || 0), 0);
+  const totalCosto = ventasFiltradas.reduce((a, v) => a + costoDeVenta(v), 0);
   const totalGanancia = totalIngreso - totalCosto;
-  const totalCobrado = ventas.reduce((a, v) => a + (v.monto_pagado || 0), 0);
+  const totalCobrado = ventasFiltradas.reduce((a, v) => a + (v.monto_pagado || 0), 0);
 
   const porTipo = new Map<string, number>();
-  cotizaciones.forEach((c) => {
+  cotizacionesFiltradas.forEach((c) => {
     c.items.forEach((it) => {
       porTipo.set(it.tipo, (porTipo.get(it.tipo) || 0) + it.subtotal);
     });
@@ -90,44 +92,52 @@ export default function ReportesPage() {
     <div>
       <div className="text-xl font-extrabold tracking-tight mb-4">Reportes</div>
 
-      <div className="grid grid-cols-2 gap-2.5 mb-4">
-        <Stat label="Ingreso total" value={fmt(totalIngreso)} accent />
-        <Stat label="Costo total" value={fmt(totalCosto)} />
-        <Stat label="Ganancia total" value={fmt(totalGanancia)} teal />
-        <Stat label="Cobrado total" value={fmt(totalCobrado)} />
-      </div>
+      <DateRangeFilter value={rango} onChange={setRango} />
 
-      <Card title="Ingreso, costo y ganancia (últimos 6 meses)">
-        <div className="h-64 -ml-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={porMes}>
-              <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 10 }} width={48} />
-              <Tooltip formatter={(v) => fmt(Number(v))} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="Ingreso" fill="#C1452A" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Costo" fill="#7A6A5C" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Ganancia" fill="#1F7A6C" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
-
-      {dataTipo.length > 0 && (
-        <Card title="Ventas por tipo de producto">
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={dataTipo} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={85} label={({ name }) => name}>
-                  {dataTipo.map((_, i) => (
-                    <Cell key={i} fill={COLORES[i % COLORES.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v) => fmt(Number(v))} />
-              </PieChart>
-            </ResponsiveContainer>
+      {!ventasFiltradas.length ? (
+        <Empty icon="📈" text="Sin ventas en este rango" sub="Prueba con otro rango de fechas" />
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-2.5 mb-4">
+            <Stat label="Ingreso total" value={fmt(totalIngreso)} accent />
+            <Stat label="Costo total" value={fmt(totalCosto)} />
+            <Stat label="Ganancia total" value={fmt(totalGanancia)} teal />
+            <Stat label="Cobrado total" value={fmt(totalCobrado)} />
           </div>
-        </Card>
+
+          <Card title="Ingreso, costo y ganancia por mes">
+            <div className="h-64 -ml-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={porMes}>
+                  <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 10 }} width={48} />
+                  <Tooltip formatter={(v) => fmt(Number(v))} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="Ingreso" fill="#C1452A" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Costo" fill="#7A6A5C" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Ganancia" fill="#1F7A6C" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          {dataTipo.length > 0 && (
+            <Card title="Ventas por tipo de producto">
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={dataTipo} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={85} label={({ name }) => name}>
+                      {dataTipo.map((_, i) => (
+                        <Cell key={i} fill={COLORES[i % COLORES.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v) => fmt(Number(v))} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          )}
+        </>
       )}
     </div>
   );

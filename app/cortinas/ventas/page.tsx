@@ -6,6 +6,8 @@ import { supabase } from "@/lib/supabase";
 import { Cliente, Instalador, Venta } from "@/lib/types";
 import { fmt, fmtDate } from "@/lib/format";
 import { Empty, Badge } from "@/components/ui";
+import DateRangeFilter from "@/components/DateRangeFilter";
+import { fechaEnRango, RangoFechas } from "@/lib/dateRange";
 
 type Filtro = "todas" | "pendiente" | "instalacion" | "pagado";
 
@@ -15,6 +17,7 @@ export default function VentasPage() {
   const [instaladores, setInstaladores] = useState<Instalador[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<Filtro>("todas");
+  const [rango, setRango] = useState<RangoFechas>({ desde: "", hasta: "" });
 
   useEffect(() => {
     (async () => {
@@ -36,6 +39,7 @@ export default function VentasPage() {
   if (filtro === "pendiente") lista = lista.filter((v) => v.estado_pago === "pendiente");
   if (filtro === "instalacion") lista = lista.filter((v) => !v.instalado);
   if (filtro === "pagado") lista = lista.filter((v) => v.estado_pago === "pagado");
+  if (rango.desde || rango.hasta) lista = lista.filter((v) => fechaEnRango(v.fecha, rango));
 
   return (
     <div>
@@ -52,6 +56,8 @@ export default function VentasPage() {
           <option value="pagado">Pagadas</option>
         </select>
       </div>
+
+      <DateRangeFilter value={rango} onChange={setRango} />
 
       {!lista.length ? (
         <Empty icon="💰" text="Sin ventas" sub="Las ventas aparecen al guardar cotizaciones" />
