@@ -33,6 +33,7 @@ export default function ConfiguracionPage() {
   const [editForm, setEditForm] = useState({ nombre: "", rol: "" });
   const [guardandoUsuario, setGuardandoUsuario] = useState(false);
   const [enviandoReset, setEnviandoReset] = useState<string | null>(null);
+  const [cargandoDemo, setCargandoDemo] = useState(false);
 
   useEffect(() => {
     load();
@@ -145,6 +146,26 @@ export default function ConfiguracionPage() {
       setEnviandoReset(null);
       console.error("Excepción enviando reset:", e);
       alert("✗ Error de red al enviar: " + (e instanceof Error ? e.message : JSON.stringify(e)));
+    }
+  }
+
+  async function cargarDemo() {
+    if (!confirm("Esto agrega clientes, instaladores, cotizaciones y ventas de prueba (marcados como \"(demo)\"). ¿Continuar?")) return;
+    setCargandoDemo(true);
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+    try {
+      const res = await fetch("/api/admin/seed-demo", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error");
+      alert(`✓ Datos de prueba cargados: ${data.clientes} clientes, ${data.instaladores} instaladores, ${data.ventas} ventas`);
+    } catch (e) {
+      alert("✗ " + (e instanceof Error ? e.message : "Error al cargar datos de prueba"));
+    } finally {
+      setCargandoDemo(false);
     }
   }
 
@@ -329,6 +350,17 @@ export default function ConfiguracionPage() {
         {mensajeUsuario && <p className="text-sm mb-3 text-[var(--accent)]">{mensajeUsuario}</p>}
         <Btn variant="secondary" onClick={crearUsuario} disabled={creandoUsuario}>
           {creandoUsuario ? "Creando..." : "Crear usuario"}
+        </Btn>
+      </Card>
+
+      <Card title="Datos de demostración">
+        <p className="text-[13px] text-[var(--mid)] mb-3.5">
+          Agrega clientes, instaladores, cotizaciones y ventas de ejemplo (marcados con "(demo)") repartidos en los
+          últimos 6 meses, para mostrar Reportes e Instalaciones con contenido. Puedes borrarlos después desde cada
+          sección (Ventas, Clientes, Equipo).
+        </p>
+        <Btn variant="ghost" onClick={cargarDemo} disabled={cargandoDemo}>
+          {cargandoDemo ? "Cargando..." : "Cargar datos de demostración"}
         </Btn>
       </Card>
     </div>
